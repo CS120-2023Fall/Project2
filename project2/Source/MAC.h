@@ -103,7 +103,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
 
     if (macState == MAC_States_Set::Idle) {
         if (RTT_log.size() >= 10) {
-            Write("RTT_log.txt", RTT_log);
+            Write_RTT("RTT_log.txt", RTT_log);
             macState = MAC_States_Set::LinkError;
             return;
         }

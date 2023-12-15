@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include  <ostream>
+#include "macros.h"
 #define MAX_WRITE_DATA_SIZE 24000
 //file operator
 inline std::vector<bool> Read_bits(const std::string& path)//read_bits_from file
@@ -113,15 +114,17 @@ inline void Write(const std::string& path, const std::vector<double>& data, std:
 	fclose(file);
 }
 
-inline void Write(const std::string &path, const std::list<double> &data) {
+inline void Write_RTT(const std::string &path, const std::list<double> &data) {
 	FILE *file = fopen(path.c_str(), "w");
 	fprintf(file, "[");
 	for (auto &i : data) {
-		fprintf(file, "%f,\n", i);
+		fprintf(file, "%f,", i);
+		fprintf(file, " reply from %s\n", ROUTER_IP);
 	}
 	fprintf(file, "];");
 	fclose(file);
 }
+
 
 
 inline void Write(const std::string& path, const std::vector<double>& data) {

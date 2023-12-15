@@ -382,7 +382,7 @@ public:
             }
             if (transfer_num >= transmittion_buffer.size()) {
                 transfer_num = 0;
-                transmittion_buffer.clear();
+                //transmittion_buffer.clear();
             }
             return silence;
     }

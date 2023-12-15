@@ -7,7 +7,7 @@
 #include<cstdlib>
 #include "receiver_transfer.h"
 #include "macros.h"
-//#include <pcap.h>
+#include <Windows.h>
 
 // milisecond
 #define ACK_TIME_OUT_THRESHOLD 5000
@@ -187,12 +187,14 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 backoff_exp = rand() % 5 + 3;
                 beforeTime_backoff = std::chrono::steady_clock::now();
                 mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
-                /////////////////////// delete me ��������������������������������
+                /////////////////////// delete me 
                 if (receiver.received_packet * NUM_PACKET_DATA_BITS >= 50000 && 
                     transmitter.transmitted_packet * NUM_PACKET_DATA_BITS >= 50000 ) {
                     macState = MAC_States_Set::LinkError;
                     std::cout << "to click stop" << std::endl;
                 }
+
+                Sleep(30);
                 //////////////////////////////////////////////////////////
                 return;
         }
@@ -200,24 +202,24 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     /// TxACK
     else if (macState == MAC_States_Set::TxACK) {
         
-        auto currentTime = std::chrono::steady_clock::now();
-        double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
-        // +, - first, then <<�� so use ()
-        double backoff = (1 << backoff_exp) - 1;
-        if (duration_milisecond <= backoff) {
-            return;
-        }
+        //auto currentTime = std::chrono::steady_clock::now();
+        //double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
+
+        //double backoff = (1 << backoff_exp) - 1;
+        //if (duration_milisecond <= backoff) {
+        //    return;
+        //}
         std::cout << "sending ack" << std::endl;
         //if (!receiver.if_channel_quiet(inBuffer, num_samples)) {
         //    return;
         //}
         bool finish = transmitter.Trans(inBuffer, outBuffer, num_samples);
         if (finish) {
-            backoff_exp = rand() % 5 + 4;
-            macState = MAC_States_Set::Idle;
+            //backoff_exp = rand() % 5 + 4;
+            //macState = MAC_States_Set::Idle;
         }
         // The computer has received a packet. It can start to transmit.
-        startTransmitting = true;
+        //startTransmitting = true;
         return;
     }
     /// CarrierSense

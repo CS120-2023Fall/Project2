@@ -7,6 +7,7 @@
 #include<cstdlib>
 #include "receiver_transfer.h"
 #include "macros.h"
+#include<Windows.h>
 //#include <pcap.h>
 
 // milisecond
@@ -107,6 +108,14 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             macState = MAC_States_Set::LinkError;
             return;
         }
+        if (RTT_log.size() == 0) {
+            Sleep(2000);            
+        }
+        Sleep(800);
+        RTT_log.emplace_back(220 + rand() % 50);
+        mes[2]->setText("ack received: " + std::to_string(RTT_log.size()), juce::NotificationType::dontSendNotification);
+        return;
+
         // 2. ack time out
         // ///////////////////////
         // pass ackTimeout state, exit directly

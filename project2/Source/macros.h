@@ -30,7 +30,7 @@
 #define START_TRANS_FIRST false
 // only receive data and reply ack
 #define ONLY_CSMA_RECEIVE true
-#define ROUTER_IP "33.22.44.22"
+#define ROUTER_IP "1.1.1.1"
 
 #define IS_ROUTER true
 #define MY_IP 0x111

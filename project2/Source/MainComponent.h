@@ -160,13 +160,7 @@ public:
             record_max = 0;
         };
         addAndMakeVisible(recordButton);
-        //csmaButton.setButtonText("csma_with_jam");
-        //csmaButton.setSize(110, 40);
-        //csmaButton.setCentrePosition(440, 200);
-        //csmaButton.onClick = [this] {start_csma = true;
-        //mes0.setText("csma_with_jam_task", juce::NotificationType::dontSendNotification); };
-        //addAndMakeVisible(csmaButton);
-        // 
+
         // message
         mes0.setText("project2", juce::NotificationType::dontSendNotification);
         mes0.setSize(400, 40);
@@ -225,6 +219,8 @@ public:
                 bufferToFill.startSample);
             int num_samples = bufferToFill.buffer->getNumSamples();
             auto* outBuffer = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
+
+            
             KeepSilence( inBuffer, outBuffer,  num_samples);
             if (juceState == juce_States_Set::T_AND_R) {
                 mac.TxPending = false;

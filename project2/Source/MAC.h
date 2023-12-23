@@ -6,10 +6,9 @@
 #include<cstdlib>
 #include "receiver_transfer.h"
 #include "macros.h"
-//#include <pcap.h>
 
 // milisecond
-#define ACK_TIME_OUT_THRESHOLD 5000
+#define ACK_TIME_OUT_THRESHOLD 1500
 #define RECEND_THRESHOLD 4
 
 class MAC_Layer {
@@ -49,8 +48,7 @@ public:
     
     //void reset_receiving_info();
     void STOP() {
-        receiver.Write_symbols();
-       
+        receiver.Write_symbols();       
     }
 
 public:
@@ -67,23 +65,20 @@ public:
 
     MAC_States_Set macState{MAC_States_Set::Idle};
     bool TxPending{ false };
-    std::deque<int> received_data;
-    bool wait = false;
+    std::deque<int> received_data;    
+    bool wait = false; // wait for ack
     int start_for_wait_sample=0;
     bool startTransmitting;
 
 private:
     int mac_address{ MY_MAC_ADDRESS };
-    // array of pointers to send message
-    juce::Label *mes[5]{ nullptr };
-    // the number of resending times
-    int resend{ 0 };
+    juce::Label *mes[5]{ nullptr }; // array of pointers to send message    
+    int resend{ 0 }; // the number of resending times
     // ack time out detect
-    // std::chrono::steady_clock::now() 
+    // std::chrono::steady_clock::now()
     std::chrono::time_point<std::chrono::steady_clock> beforeTime_ack;
-    bool ackTimeOut_valid{ false };
-    // exponent of the backoff. 2^m - 1, millisecond
-    int backoff_exp{ 1 };
+    bool ackTimeOut_valid{ false };    
+    int backoff_exp{ 1 }; // exponent of the backoff. 2^m - 1, millisecond
     std::chrono::time_point < std::chrono::steady_clock> beforeTime_backoff{ std::chrono::steady_clock::now() };
 public:
     Receiver receiver;
@@ -93,23 +88,16 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
     for (int i = 0; i < num_samples; i++) {
         outBuffer[i] = 0;
     }
-    //pcap_handler *p;
 }
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
-
-       // deal with every state
-    //if (transmitter.transmitted_packet >= maximum_packet) {
-    //    macState = MAC_States_Set::LinkError;
-    //}
     /// Idle
     if (macState == MAC_States_Set::Idle) {
-
-        // 2. ack time out
+        auto currentTime = std::chrono::steady_clock::now();
+        // 1. ack time out
         // ///////////////////////
         // pass ackTimeout state, exit directly
         ///////////////////////////////
         if (ackTimeOut_valid) {
-            auto currentTime = std::chrono::steady_clock::now();
             // milisecond
             double duration_millsecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_ack).count();
             if (duration_millsecond > ACK_TIME_OUT_THRESHOLD) {
@@ -121,18 +109,8 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 return;
             }
         }
-        // 3. send data
-        auto currentTime = std::chrono::steady_clock::now();
-        double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
-        // +, - first, then <<
-        double backoff = (1 << backoff_exp) - 1;
-        if (TxPending && (backoff == 0 || duration_milisecond > backoff)) {
-            backoff_exp = 0;
-            macState = MAC_States_Set::CarrierSense;
-            return;
-        }
+        // 2. detect preamble, invoke detect_frame()
         bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
-        // 1. detect preamble, invoke detect_frame()
         if (tmp) {
             mes[3]->setText("preamble detecked " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet), 
                 juce::NotificationType::dontSendNotification);
@@ -144,9 +122,17 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             std::cout << "symbol_code:" << receiver.symbol_code.size() << std::endl;
             return;
         }
+        // 3. send data
+        double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
+        // +, - are prior to <<
+        double backoff = (1 << backoff_exp) - 1;
+        if (TxPending && (backoff == 0 || duration_milisecond >= backoff)) {
+            backoff_exp = 0;
+            macState = MAC_States_Set::CarrierSense;
+        }
     }
     /// RxFrame
-    else if (macState == MAC_States_Set::RxFrame) {
+    if (macState == MAC_States_Set::RxFrame) {
         Rx_Frame_Received_Type tmp = receiver.decode_one_packet(inBuffer, outBuffer, num_samples);
 
         std::cout << "received packet type: " << (int)tmp << std::endl;
@@ -188,7 +174,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         }
     }
     /// TxACK
-    else if (macState == MAC_States_Set::TxACK) {
+    if (macState == MAC_States_Set::TxACK) {
         
         auto currentTime = std::chrono::steady_clock::now();
         double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
@@ -211,11 +197,10 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         return;
     }
     /// CarrierSense
-    else if (macState == MAC_States_Set::CarrierSense) {
+    if (macState == MAC_States_Set::CarrierSense) {
         if (receiver.if_channel_quiet(inBuffer, num_samples)) {
             macState = MAC_States_Set::TxFrame;
             bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_data);
-            return;
         }
         else {
             backoff_exp = rand() % 5 + 4;
@@ -225,23 +210,21 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         }
     }
     /// TxFrame
-    else if (macState == MAC_States_Set::TxFrame) {
-
+    if (macState == MAC_States_Set::TxFrame) {
         bool finish= transmitter.Trans(inBuffer, outBuffer, num_samples);
-
-         // transmition finishes
+        // transmition finishes
         if (finish) {
             beforeTime_ack = std::chrono::steady_clock::now();
             ackTimeOut_valid = true;
             macState = MAC_States_Set::Idle;
             wait = true;
         }
+        return;
     }
     /// ACKTimeout
-    else if (macState == MAC_States_Set::ACKTimeout) {
+    if (macState == MAC_States_Set::ACKTimeout) {
         if (resend > RECEND_THRESHOLD) {
             macState = MAC_States_Set::LinkError;
-            return;
         }
         // should not reach here
         else {
@@ -256,7 +239,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         }
     }
     /// LinkError
-    else if (macState == MAC_States_Set::LinkError) {
+    if (macState == MAC_States_Set::LinkError) {
         return;
     }
 }

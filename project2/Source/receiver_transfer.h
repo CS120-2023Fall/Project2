@@ -1,6 +1,7 @@
 #pragma once
 #include<deque>
-#include "modulate_and_demoudulate.h"
+#include <vector>
+#include "transmitter.h"
 #include "macros.h"
 
 
@@ -13,7 +14,7 @@ constexpr const int CRC_SYMBOLS = NUM_CRC_BITS / BITS_PER_SYMBOL;//number of sym
 std::vector<double > empty=std::vector<double>(0);
 std::deque<double> empty_deque=std::deque<double>(0,0.0);
 constexpr const int samples_per_symbol = samples_per_bit;
-constexpr const int MAC_PACKET_SAMPLES = PREAMBLE_SIZE + (OVERHEAD_SYMBOLS + PACKET_DATA_SIZE) * samples_per_symbol;//how many samples in a mac packet
+//constexpr const int MAC_PACKET_SAMPLES = PREAMBLE_SIZE + (OVERHEAD_SYMBOLS + PACKET_DATA_SIZE) * samples_per_symbol;//how many samples in a mac packet
 constexpr const int PHY_PACKET_SAMPLES = PREAMBLE_SIZE + (CRC_SYMBOLS+ PACKET_DATA_SIZE ) * samples_per_symbol;//how many samples in a phy packet
 
 enum class  Frame_Type {
@@ -27,29 +28,30 @@ enum  Rx_Frame_Received_Type {
     valid_data = 2
 };
 
+
 class Receiver {
 public:
-    Receiver() :receive_buffer(empty) {
+    Receiver() :preamble(default_trans_wire.preamble) {
         Initialize();
     }
 
     void Initialize() {
-        sync_buffer = empty_deque;
-        for (int i = 0; i < PREAMBLE_SIZE; i++) {
-            sync_buffer.push_back(0);
-        }
-        receive_buffer.clear();
-        receive_power = 0;
+        sync_buffer.clear();
+        //for (int i = 0; i < PREAMBLE_SIZE; i++) {
+        //    sync_buffer.push_back(0);
+        //}
+        //receive_buffer.clear();
+        //receive_power = 0;
         symbol_code.clear();
         bits.clear();
         received_packet = 0;
         decode_buffer.clear();
+        matched_preamble_len = 0;
         start_index = -1;
-        demoudulator = new Demoudulator();
+        //demoudulator = new Demoudulator();
 
     }
-    void Write_symbols()
-    {
+    void Write_symbols() {
         Write("project2_bits_receiver.txt", symbol_code);
     }
 
@@ -58,7 +60,7 @@ public:
     /// sample_buffer: The function gets samples from this buffer
     /// start_index: start at which position to decode
     /// after_end_index: position after the end position
-    int decode_a_bit(std::vector<double> &sample_buffer, int start_index) {
+    int decode_a_bit(const std::vector<double> &sample_buffer, int start_index) {
         // 0
         if (sample_buffer[start_index] + sample_buffer[start_index + 1] < 0 &&
             sample_buffer[start_index + 2] + sample_buffer[start_index + 3] > 0) {
@@ -69,7 +71,17 @@ public:
             return 1;
         }
     }
-
+    int decode_a_bit(const float *sample_buffer, int start_index) {
+        // 0
+        if (sample_buffer[start_index] + sample_buffer[start_index + 1] < 0 &&
+            sample_buffer[start_index + 2] + sample_buffer[start_index + 3] > 0) {
+            return 0;
+        }
+        // 1
+        else {
+            return 1;
+        }
+    }
         // inBuffer: input ,outBuffer: not used ,num_samples: sample from input
         // try to read the num_samples sample from inBuffer,if the accumulated buffer still cannot achieve a packet,return still_receiving,if it satisfies a packet samples
         // return whether it is valid_ack,valid_data,or error,if valid_data,push the translated data symbols into symbol_code
@@ -78,7 +90,7 @@ public:
         // 1 VALID_ACK,
         // 2 VALID_DATA
     Rx_Frame_Received_Type decode_one_packet(const float *inBuffer, float *outBuffer, int num_samples) {
-        double scale = 1;
+        //double scale = 1;
         double zero_detect_threashold = 0.2;
         // detech head, go over 0 value interval between preamble and mac header.
         bool data_synced = false;
@@ -106,14 +118,8 @@ public:
                     continue;
                 }
             }
-            decode_buffer.push_back(scale * inBuffer[i]);
-            int size;
-            if (PING_MODE) {
-                size = (NUM_MAC_HEADER_BITS + NUM_IP_HEADER_BITS)*NUM_SAMPLES_PER_BIT;
-            }
-            else {
-                size = (NUM_MAC_HEADER_BITS + NUM_PACKET_DATA_BITS) * NUM_SAMPLES_PER_BIT);
-            }
+            decode_buffer.push_back( inBuffer[i]);
+
             if (decode_buffer.size() >= (NUM_MAC_HEADER_BITS+ NUM_PACKET_DATA_BITS)  * NUM_SAMPLES_PER_BIT)
             {
 
@@ -173,60 +179,52 @@ public:
     }
     
     /// outBuffer is not used,inBuffer is the input ,read num_samples sample from input
-    /// detect the preamble if  preamble detected return true,else false
-    /// after detecting it auto enter the decode_state and initialize the receiver(decode_buffer will have 200samples)    
-    bool detect_frame(const float *inBuffer, float *outBuffer, int num_samples)
-    {
+    bool detect_frame(const float *inBuffer, float *outBuffer, int num_samples) {
         bool detected = false;
-        double scale = 1;
-        for (int i = 0; i < num_samples; i++) {
-            double current_sample;
-
-            current_sample = scale*inBuffer[i];
-
-            receive_power = (receive_power * 63 + current_sample * current_sample) / 64;
-            receive_buffer.push_back(current_sample);
-            sync_buffer.push_back(current_sample);
-            sync_buffer.pop_front();
-
-            int size = sync_buffer.size();
-            double sum = 0;
-            for (int j = 0; j < size; j++) {
-                sum += preamble[j] * sync_buffer[j];
-            }
-            sum /= 200;
-
-            if (sum > receive_power * 2 && sum > sync_max && sum > 0.05) {
-                sync_max = sum;
-                start_index = receive_buffer.size() - 1;
-            }
-            else {
-                if (receive_buffer.size() - start_index > 200 && start_index > 0) {
-                    // Copy samples from receiver_buffer to decode_buffer
-                    // //start to decode
- /*                   std::cout << receive_buffer[start_index + 1] << std::endl;
-                    std::cout << receive_buffer[start_index + 2] << std::endl;
-                    std::cout << receive_buffer[start_index + 9] << std::endl;
-                    std::cout << receive_buffer[start_index + 10] << std::endl;*/
-                    decode_buffer = empty;
-                    decode_buffer = vector_from_start_to_end(receive_buffer, start_index + 1, receive_buffer.size());
-                    for (int j = i+1; j < num_samples; j++) {
-                        decode_buffer.push_back(inBuffer[j]);
-                    }//receive for
- /*                   std::cout << "3.decode buffer after preamble: "<< decode_buffer.size() << std::endl;*/
-                    receive_buffer.clear();
-                    sync_buffer.clear();
-                    for (int i = 0; i < PREAMBLE_SIZE; i++) {
-                        sync_buffer.push_back(0);
-                    }
-                    start_index = -1;
-                    sync_max = 0;
-                    receive_power = 0;
-                    detected = true;
-                    return detected;
+        // Start of the sound.
+        bool find_sound = false;
+        int aloud_index = 0;
+        double sum_quiet = 0.0, sum_aloud = 0.0;
+        for (int i = 0; i < 4; ++i) {
+            sum_quiet += inBuffer[i];
+            sum_aloud += inBuffer[i + 4];
+        }
+        if (sum_quiet * 1e2 < sum_aloud) {
+            find_sound = true;
+        }
+        if (!find_sound) {
+            for (int i = 8; i < num_samples; ++i) {
+                sum_quiet += -inBuffer[i - 8] + inBuffer[i - 4];
+                sum_quiet += -inBuffer[i - 4] + inBuffer[i];
+                if (sum_quiet * 1e3 < sum_aloud) {
+                    find_sound = true;
+                    aloud_index = i - 8;
+                    break;
                 }
             }
+            if (!find_sound) {
+                return false;
+            }
         }
+        for (int i = aloud_index; i < num_samples - 4; ++i) {
+            if (decode_a_bit(inBuffer, i) == preamble[matched_preamble_len]) {
+                ++matched_preamble_len;
+                if (matched_preamble_len == 8) {
+                    for (int j = i + 4; j < num_samples; ++j) {
+                        decode_buffer.emplace_back(inBuffer[i]);
+                    }
+                    return true;
+                }
+                // i = i + 4
+                i += 3;
+                continue;
+            }
+            // A bit is not matched before reaching the preamble end.
+            if (matched_preamble_len) {
+                matched_preamble_len = 0;
+            }
+        }        
+        
         return detected;
     }
 
@@ -244,19 +242,17 @@ public:
             return false;
     }
 public:
-    std::vector<double> receive_buffer = empty;
-    std::deque<double> sync_buffer = empty_deque;
-    std::vector<double> decode_buffer = empty;
-    std::vector<double> preamble = default_trans.preamble;
-    std::vector<double> carrier_waves_1 = default_trans_wire.carrier_waves_1;
-    std::vector<double> carrier_waves_0 = default_trans_wire.carrier_waves_0;
+    //std::vector<double> receive_buffer = empty;
+    std::deque<double> sync_buffer;
+    std::vector<double> decode_buffer;
     std::vector<int>symbol_code;
+    std::vector<int> preamble;
     std::vector<bool> bits;
     int start_index = -1;
     unsigned int received_packet = 0;
-    double sync_max = 0;
-    double receive_power = 0;
-    Demoudulator* demoudulator;
+
+private:
+    int matched_preamble_len{ 0 };
 };
 
 enum Tx_frame_status {
@@ -267,18 +263,21 @@ enum Tx_frame_status {
 
 class Transfer {
 public:
-    Transfer() {
+    Transfer() : preamble(default_trans_wire.preamble) {
+        Initialize();
     }
-    void Initialize() { CRC_symbols.clear();
+    void Initialize() {
+        CRC_symbols.clear();
         transfer_num = 0;
-        transmittion_buffer.clear();
+        transmitting_buffer.clear();
         transmitted_packet = 0;
     }
-    std::vector<double > transmittion_buffer;
+    std::vector<double> transmitting_buffer;
     std::vector<bool>bits = default_trans_wire.bits;
-    std::vector<unsigned int> symbols = default_trans_wire.symbols;
-    std::vector<double>preamble = default_trans_wire.preamble;
-    std::vector<double > packet_sequences;
+    //std::vector<unsigned int> symbols = default_trans_wire.symbols;
+    // Preamble's length is 64 bits.
+    std::vector<int> preamble;
+    std::vector<double> packet_sequences;
     std::vector<bool> CRC_bits;
     std::vector<unsigned> CRC_symbols;
     int transfer_num = 0;
@@ -288,16 +287,16 @@ public:
     // convert a bit to 4 samples and add the samples to the end fo dest.
     void add_samples_from_a_bit(std::vector<double> &dest, int bit) {
         if (bit == 0) {
-            dest.emplace_back(-0.9);
-            dest.emplace_back(-0.9);
-            dest.emplace_back(0.9);
-            dest.emplace_back(0.9);
+            dest.emplace_back(-0.95);
+            dest.emplace_back(-0.95);
+            dest.emplace_back(0.95);
+            dest.emplace_back(0.95);
         }
         else if (bit == 1) {
-            dest.emplace_back(0.9);
-            dest.emplace_back(0.9);
-            dest.emplace_back(-0.9);
-            dest.emplace_back(-0.9);
+            dest.emplace_back(0.95);
+            dest.emplace_back(0.95);
+            dest.emplace_back(-0.95);
+            dest.emplace_back(-0.95);
         }
     }
 
@@ -305,27 +304,23 @@ public:
     /// The return value is not used.
     bool Add_one_packet(const float *inBuffer, float *outBuffer, int num_samples, Tx_frame_status status, 
         unsigned int received_packet = 1) {
-    // useful variables:
-    // 
         // set these constants properly
         constexpr int data_bits_in_a_packet = NUM_PACKET_DATA_BITS;
         // 50000 / bits_in_a_packet is the number of packet
-        // 1 ÊÇ´Ó1 µ½-1
-        // 0 ÊÇ´Ó-1 µ½ 1
-        // 4 ¸ö sample ±íÊ¾1 bit
-        if (status == Tx_data) {
-            if (transmitted_packet >= maximum_packet)
-                return false;
-        }
+        //if (status == Tx_data) {
+        //    if (transmitted_packet >= maximum_packet)
+        //        return false;
+        //}
             // add preamble
-            for (int i = 0; i < PREAMBLE_SIZE; ++i) {
-                transmittion_buffer.emplace_back(preamble[i]);
+            for (int i = 0; i < preamble.size(); ++i) {
+                add_samples_from_a_bit(transmitting_buffer, preamble[i]);
             }
             // Add a gap between preamble and others.
-            for (int i = 0; i < 10; ++i) {
-                transmittion_buffer.emplace_back(0.0);
-            }
-            // No crc. Add destination, source, type, packet number(start from 0).
+            //for (int i = 0; i < 10; ++i) {
+            //    transmitting_buffer.emplace_back(0.0);
+            //}
+            // 
+            // Add destination, source, type, packet number(start from 0).
             int concatenate = (OTHER_MAC_ADDRESS << 5) + (MY_MAC_ADDRESS << 2)
                 + (status == Tx_data ? (int)Frame_Type::data : (int)Frame_Type::ack);
             concatenate = (concatenate << PACKET_NUM_BITS)
@@ -333,25 +328,34 @@ public:
             for (int i = NUM_MAC_HEADER_BITS - 1; i >= 0; --i) {
                 int bit = concatenate >> i & 1;
                 if (bit == 1) {
-                    add_samples_from_a_bit(transmittion_buffer, bit);
+                    add_samples_from_a_bit(transmitting_buffer, bit);
                 }
                 // 0
                 else {
-                    add_samples_from_a_bit(transmittion_buffer, bit);
+                    add_samples_from_a_bit(transmitting_buffer, bit);
                 }                
             }
+            /////////////////////////////////
+            // TODO: this is unfinished!!!!
+            // /////////////////////////////////
+            // data length, 16 bits
+            int len = 0;
+            for (int i = 0; i < 16; ++i) {
+                add_samples_from_a_bit(transmitting_buffer, 0);
+            }
+            ////////////////////////////////////////////////////
             // data
             if (status == Tx_data) {
                 for (int i = transmitted_packet * data_bits_in_a_packet; i < (transmitted_packet + 1) * data_bits_in_a_packet; ++i) {
-                    add_samples_from_a_bit(transmittion_buffer, (int)bits[i]);
+                    add_samples_from_a_bit(transmitting_buffer, (int)bits[i]);
                 }
             }
             else if (status == Tx_ack) {
                 for (int i = 0; i < data_bits_in_a_packet; ++i) {
-                    add_samples_from_a_bit(transmittion_buffer, 0);
+                    // random content
+                    add_samples_from_a_bit(transmitting_buffer, i & 1);
                 }
-            }
-        
+            }        
         return true;
     }
 
@@ -362,19 +366,19 @@ public:
         bool silence = false;
 
             for (int i = 0; i < num_samples; i++) {
-                if (transfer_num >= transmittion_buffer.size()) {
+                if (transfer_num >= transmitting_buffer.size()) {
                     silence = true;
                     outBuffer[i] = 0;
                 }
                 else {
 
-                    outBuffer[i] = transmittion_buffer[transfer_num];
+                    outBuffer[i] = transmitting_buffer[transfer_num];
                     transfer_num++;
                 }
             }
-            if (transfer_num >= transmittion_buffer.size()) {
+            if (transfer_num >= transmitting_buffer.size()) {
                 transfer_num = 0;
-                transmittion_buffer.clear();
+                transmitting_buffer.clear();
             }
             return silence;
     }

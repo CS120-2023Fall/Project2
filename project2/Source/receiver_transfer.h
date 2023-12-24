@@ -36,18 +36,12 @@ public:
     }
 
     void Initialize() {
-        sync_buffer.clear();
-        //for (int i = 0; i < PREAMBLE_SIZE; i++) {
-        //    sync_buffer.push_back(0);
-        //}
-        //receive_buffer.clear();
-        //receive_power = 0;
+        sync_buffer = std::deque<double>(350, 0.0);
         symbol_code.clear();
-        bits.clear();
         received_packet = 0;
         decode_buffer.clear();
         matched_preamble_len = 0;
-        start_index = -1;
+        //start_index = -1;
         //demoudulator = new Demoudulator();
 
     }
@@ -61,6 +55,17 @@ public:
     /// start_index: start at which position to decode
     /// after_end_index: position after the end position
     int decode_a_bit(const std::vector<double> &sample_buffer, int start_index) {
+        // 0
+        if (sample_buffer[start_index] + sample_buffer[start_index + 1] < 0 &&
+            sample_buffer[start_index + 2] + sample_buffer[start_index + 3] > 0) {
+            return 0;
+        }
+        // 1
+        else {
+            return 1;
+        }
+    }
+    int decode_a_bit(const std::deque<double> &sample_buffer, int start_index) {
         // 0
         if (sample_buffer[start_index] + sample_buffer[start_index + 1] < 0 &&
             sample_buffer[start_index + 2] + sample_buffer[start_index + 3] > 0) {
@@ -181,49 +186,39 @@ public:
     /// outBuffer is not used,inBuffer is the input ,read num_samples sample from input
     bool detect_frame(const float *inBuffer, float *outBuffer, int num_samples) {
         bool detected = false;
-        // Start of the sound.
-        bool find_sound = false;
-        int aloud_index = 0;
-        double sum_quiet = 0.0, sum_aloud = 0.0;
-        for (int i = 0; i < 4; ++i) {
-            sum_quiet += inBuffer[i];
-            sum_aloud += inBuffer[i + 4];
-        }
-        if (sum_quiet * 1e2 < sum_aloud) {
-            find_sound = true;
-        }
-        if (!find_sound) {
-            for (int i = 8; i < num_samples; ++i) {
-                sum_quiet += -inBuffer[i - 8] + inBuffer[i - 4];
-                sum_quiet += -inBuffer[i - 4] + inBuffer[i];
-                if (sum_quiet * 1e3 < sum_aloud) {
-                    find_sound = true;
-                    aloud_index = i - 8;
+    
+        int sync_buffer_size = sync_buffer.size();
+        for (int i = 0; i < num_samples; ++i) {
+            sync_buffer.pop_front();
+            sync_buffer.emplace_back(inBuffer[i]);
+            // compare with preamble
+            for (int j = 0; j <= sync_buffer_size - 4; j += 4) {
+                if (decode_a_bit(sync_buffer, j) == preamble[matched_preamble_len]) {
+                    ++matched_preamble_len;
+                }
+                else {
+                    matched_preamble_len = 0;
+                }
+                if (matched_preamble_len == 64) {
+                    detected = true;
+                }
+                if (detected && j + 4 <= sync_buffer_size - 1) {
+                    for (int k = j + 4; k < sync_buffer_size; ++k) {
+                        decode_buffer.emplace_back(sync_buffer[k]);
+                    }
                     break;
                 }
             }
-            if (!find_sound) {
-                return false;
+            if (detected) {
+                for (int j = i; j < num_samples; ++j) {
+                    decode_buffer.emplace_back(inBuffer[j]);
+                }
+                for (auto element : sync_buffer) {
+                    element = 0.0;
+                }
+                break;
             }
         }
-        for (int i = aloud_index; i < num_samples - 4; ++i) {
-            if (decode_a_bit(inBuffer, i) == preamble[matched_preamble_len]) {
-                ++matched_preamble_len;
-                if (matched_preamble_len == 8) {
-                    for (int j = i + 4; j < num_samples; ++j) {
-                        decode_buffer.emplace_back(inBuffer[i]);
-                    }
-                    return true;
-                }
-                // i = i + 4
-                i += 3;
-                continue;
-            }
-            // A bit is not matched before reaching the preamble end.
-            if (matched_preamble_len) {
-                matched_preamble_len = 0;
-            }
-        }        
         
         return detected;
     }
@@ -245,9 +240,9 @@ public:
     //std::vector<double> receive_buffer = empty;
     std::deque<double> sync_buffer;
     std::vector<double> decode_buffer;
-    std::vector<int>symbol_code;
+    std::vector<int>symbol_code; // decoded bits
     std::vector<int> preamble;
-    std::vector<bool> bits;
+    //std::vector<bool> bits;
     int start_index = -1;
     unsigned int received_packet = 0;
 

@@ -93,7 +93,7 @@ public:
     Transmitter_with_wire() = default;
     Transmitter_with_wire(const std::string &path, int _sample_rate) :sample_rate(_sample_rate) {
         bits = Read_bits_from_bin(path);//read the bits from a bin file
-        seperation_num = BITS_PER_SYMBOL;//seperation_num is the Ñ¹Ëõ ¼¸Î»Bit
+        seperation_num = BITS_PER_SYMBOL;//seperation_num is the compress how many bit
         symbols = translate_from_bits_vector_to_unsigned_int_vector(bits, seperation_num);//bit_to_symbol
         //generate_carrier();//generate carrier_0 and carrier_1
         generate_length();

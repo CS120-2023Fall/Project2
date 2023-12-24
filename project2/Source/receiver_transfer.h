@@ -41,6 +41,7 @@ public:
         received_packet = 0;
         decode_buffer.clear();
         matched_preamble_len = 0;
+        header_processed = false;
         //start_index = -1;
         //demoudulator = new Demoudulator();
 
@@ -95,52 +96,23 @@ public:
         // 1 VALID_ACK,
         // 2 VALID_DATA
     Rx_Frame_Received_Type decode_one_packet(const float *inBuffer, float *outBuffer, int num_samples) {
-        //double scale = 1;
-        double zero_detect_threashold = 0.2;
-        // detech head, go over 0 value interval between preamble and mac header.
-        bool data_synced = false;
-        if (!decode_buffer.empty()) {
-            bool if_need_this = false;
-            for (size_t i = 3; i < decode_buffer.size(); ++i) {
-                if (abs(decode_buffer[i]) + abs(decode_buffer[i - 1]) + abs(decode_buffer[i - 2]) + abs(decode_buffer[i - 3]) < zero_detect_threashold) {
-                    if_need_this = true;
-                    continue;
-                }
-                else if (if_need_this &&
-                    abs(decode_buffer[i]) + abs(decode_buffer[i - 1]) + abs(decode_buffer[i - 2]) + abs(decode_buffer[i - 3]) > zero_detect_threashold) {
-                    decode_buffer.erase(decode_buffer.begin(), decode_buffer.begin() + i);
-                    break;
-                }
-            }
-        }
-        for (int i = 0; i < num_samples; i++) 
-        {
-            if (!data_synced && i >= 3) {
-                if (abs(inBuffer[i - 3]) + abs(inBuffer[i - 2]) + abs(inBuffer[i - 1]) + abs(inBuffer[i]) > zero_detect_threashold) {
-                    data_synced = true;
-                }
-                else {
-                    continue;
-                }
-            }
-            decode_buffer.push_back( inBuffer[i]);
+        for (int i = 0; i < num_samples; i++) {
+            decode_buffer.push_back(inBuffer[i]);
 
-            if (decode_buffer.size() >= (NUM_MAC_HEADER_BITS+ NUM_PACKET_DATA_BITS)  * NUM_SAMPLES_PER_BIT)
-            {
-
+            // process header.
+            if (!header_processed && decode_buffer.size() >= NUM_MAC_HEADER_BITS * NUM_SAMPLES_PER_BIT) {
                 std::vector<int> header_vec;
                 // j is the bit index
-                for (int j = 0; j < NUM_MAC_HEADER_BITS; ++j)  
-                {
+                for (int j = 0; j < NUM_MAC_HEADER_BITS; ++j) {
                     header_vec.emplace_back(decode_a_bit(decode_buffer, j * NUM_SAMPLES_PER_BIT));
-                }                
+                }
                 int dest = (header_vec[0] << 2) + (header_vec[1] << 1) + header_vec[2];
                 int src = (header_vec[3] << 2) + (header_vec[4] << 1) + header_vec[5];
                 int type = (header_vec[6] << 1) + header_vec[7];
                 std::cout << "dest, src, type: " << dest << src << type << std::endl;
                 int packet_num = 0;
-                for (int j = NUM_MAC_HEADER_BITS - PACKET_NUM_BITS, offset = PACKET_NUM_BITS - 1; 
-                    j < NUM_MAC_HEADER_BITS; ++j, --offset) {
+                for (int j = NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS, offset = PACKET_NUM_BITS - 1;
+                    j < NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS; ++j, --offset) {
                     packet_num += header_vec[j] << offset;
                 }
                 std::cout << "packet num: " << packet_num << std::endl;
@@ -150,7 +122,7 @@ public:
                     std::cout << "error packet" << std::endl;
                     std::cout << decode_buffer.size() << std::endl;
                     Write("decode_log.txt", decode_buffer);
-                    decode_buffer=empty;
+                    decode_buffer.clear();
                     return error;
                 }
                 // ack
@@ -162,21 +134,36 @@ public:
                 }
                 // data
                 else if (Frame_Type(type) == Frame_Type::data) {
-                    // start_position: bit index, remember x4
-                    int start_position = NUM_MAC_HEADER_BITS;
-                    for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
-                        symbol_code.emplace_back(decode_a_bit(decode_buffer, bit_index *4));
-                    }
-                    std::cout << "exit after receiving data" << std::endl;
-                    Write("decode_log.txt", decode_buffer);
-                    decode_buffer=empty;
-                    return valid_data;
+                    header_processed = true;
+                    
+                    //// start_position: bit index, remember x4
+                    //int start_position = NUM_MAC_HEADER_BITS;
+                    //for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
+                    //    symbol_code.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
+                    //}
+                    //std::cout << "exit after receiving data" << std::endl;
+                    //Write("decode_log.txt", decode_buffer);
+                    //decode_buffer.clear();
+                    //return valid_data;
                 }
                 else {
+                    // this part is never run.
                     std::cout << "else cir" << std::endl;
-                    decode_buffer = empty;
+                    decode_buffer.clear();
                     return error;
                 }
+            }
+            // decode data.
+            if (header_processed && decode_buffer.size() >= (NUM_MAC_HEADER_BITS + NUM_PACKET_DATA_BITS) * NUM_SAMPLES_PER_BIT) {
+                // start_position: bit index, remember x4
+                int start_position = NUM_MAC_HEADER_BITS;
+                for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
+                    symbol_code.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
+                }
+                std::cout << "exit after receiving data" << std::endl;
+                Write("decode_log.txt", decode_buffer);
+                decode_buffer.clear();
+                return valid_data;
             }
         }
         return still_receiving;
@@ -248,6 +235,7 @@ public:
 
 private:
     int matched_preamble_len{ 0 };
+    bool header_processed{ false };
 };
 
 enum Tx_frame_status {
@@ -335,7 +323,7 @@ public:
             // /////////////////////////////////
             // data length, 16 bits
             int len = 0;
-            for (int i = 0; i < 16; ++i) {
+            for (int i = 0; i < NUM_DATE_LEN_BITS; ++i) {
                 add_samples_from_a_bit(transmitting_buffer, 0);
             }
             ////////////////////////////////////////////////////

@@ -151,10 +151,11 @@ public:
         csmaWithJamButton.setCentrePosition(330, 200);
         csmaWithJamButton.onClick = [this] {start_csma = true; juceState = juce_States_Set::T_AND_R ; mac.Start();
         mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
-        addAndMakeVisible(csmaWithJamButton);
-        recordButton.setButtonText("reflect_the_sound");
-        recordButton.setSize(110, 40);
-        recordButton.setCentrePosition(400, 200);
+        //addAndMakeVisible(csmaWithJamButton);
+
+        recordButton.setButtonText("reflect the sound");
+        recordButton.setSize(130, 40);
+        recordButton.setCentrePosition(460, 200);
         recordButton.onClick = [this] {
             juceState = juce_States_Set::RECORD;
             record_max = 0;
@@ -227,12 +228,10 @@ public:
                 if (mac.startTransmitting && mac.transmitter.transmitted_packet * NUM_PACKET_DATA_BITS  < 50000) {
                     mac.TxPending = true;
                 }
+                // wait for ack
                 if (mac.wait) {
                     mac.TxPending = false;
                 }
-                /////////////////////// delete me ////////////////////
-                mac.TxPending = false;
-                // //////////////////////////////////////////////
                
                 // Record the inBuffer. Watch out memory overflow.
                 if (RECORD_IN_LIVE)
@@ -254,11 +253,9 @@ public:
                 return;
             }
             else if (juceState == juce_States_Set::RECORD) {
-                
+                record_max = 0;
                 for (int i = 0; i < num_samples; ++i) {
-                    record_max =record_max>abs(inBuffer[i])?record_max:abs(inBuffer[i]);
-
-
+                    record_max = record_max > abs(inBuffer[i]) ? record_max : abs(inBuffer[i]);
                 }
                 mes0.setText("the record_max is :" + std::to_string(record_max),juce::dontSendNotification);
             }

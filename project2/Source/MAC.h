@@ -144,10 +144,6 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                     juce::NotificationType::dontSendNotification);
                 wait = false;
                 backoff_exp = rand() % 3 + 5;
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/4_devices_csma
                 return;
             case Rx_Frame_Received_Type::valid_data: {
                 //std::cout << "receiver_buffer:" << receiver.receive_buffer.size() << std::endl;

@@ -167,6 +167,7 @@ public:
                 std::cout << "exit after receiving data" << std::endl;
                 Write("decode_log.txt", decode_buffer);
                 decode_buffer.clear();
+                header_processed = false;
                 return valid_data;
             }
         }
@@ -339,7 +340,7 @@ public:
                 }
             }
             else if (status == Tx_ack) {
-                for (int i = 0; i < data_bits_in_a_packet; ++i) {
+                for (int i = 0; i < 500; ++i) {
                     // random content
                     add_samples_from_a_bit(transmitting_buffer, i & 1);
                 }
@@ -368,7 +369,7 @@ public:
                 transfer_num = 0;
                 transmitting_buffer.clear();
             }
-            Write("transmitting_buffer.txt", transmitting_buffer);
+            //Write("transmitting_buffer.txt", transmitting_buffer);
             return silence;
     }
 };

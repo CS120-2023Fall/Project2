@@ -109,10 +109,10 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 juce::NotificationType::dontSendNotification);
             macState = MAC_States_Set::RxFrame;
             std::cout << "detect_frame" << std::endl;
-            //std::cout <<"receiver_buffer:" <<receiver.receive_buffer.size() << std::endl;
-            std::cout << "sync_buffer:" << receiver.sync_buffer.size() << std::endl;
-            std::cout << "decode_buffer:" << receiver.decode_buffer.size() << std::endl;
-            std::cout << "symbol_code:" << receiver.symbol_code.size() << std::endl;
+            ////std::cout <<"receiver_buffer:" <<receiver.receive_buffer.size() << std::endl;
+            //std::cout << "sync_buffer:" << receiver.sync_buffer.size() << std::endl;
+            //std::cout << "decode_buffer:" << receiver.decode_buffer.size() << std::endl;
+            //std::cout << "symbol_code:" << receiver.symbol_code.size() << std::endl;
             // It must return due to the implementation of detect_frame().
             return;
         }
@@ -147,9 +147,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 return;
             case Rx_Frame_Received_Type::valid_data:
                 //std::cout << "receiver_buffer:" << receiver.receive_buffer.size() << std::endl;
-                std::cout << "sync_buffer:" << receiver.sync_buffer.size() << std::endl;
-                std::cout << "decode_buffer:" << receiver.decode_buffer.size() << std::endl;
-                std::cout << "symbol_code:" << receiver.symbol_code.size() << std::endl;
+                //std::cout << "sync_buffer:" << receiver.sync_buffer.size() << std::endl;
+                //std::cout << "decode_buffer:" << receiver.decode_buffer.size() << std::endl;
+                //std::cout << "symbol_code:" << receiver.symbol_code.size() << std::endl;
                 macState = MAC_States_Set::TxACK;
                 receiver.received_packet += 1;
                 bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, 
@@ -185,6 +185,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         if (finish) {
             backoff_exp = rand() % 5 + 4;
             macState = MAC_States_Set::Idle;
+            std::cout << "finish sending ack" << std::endl;
         }
         // The computer has received a packet. It can start to transmit.
         startTransmitting = true;

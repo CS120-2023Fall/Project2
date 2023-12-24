@@ -112,8 +112,9 @@ public:
           mac.macState = MAC_Layer::MAC_States_Set::Idle;
 
           mes0.setText("stop", juce::NotificationType::dontSendNotification);
-
-          Write("inBuffer_log.txt", in_data);
+          if (RECORD_IN_LIVE) {
+            Write("inBuffer_log.txt", in_data);
+          }
           in_data.clear();
         //std::cout << "bits: ";
         //for (int i = 0; i < 16; ++i) {

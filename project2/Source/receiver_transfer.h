@@ -126,7 +126,7 @@ public:
                 if (dest != MY_MAC_ADDRESS || (Frame_Type(type) != Frame_Type::ack && Frame_Type(type) != Frame_Type::data)) {
                     std::cout << "error packet" << std::endl;
                     std::cout << decode_buffer.size() << std::endl;
-                    Write("decode_log.txt", decode_buffer);
+                    //Write("decode_log.txt", decode_buffer);
                     decode_buffer.clear();
                     return error;
                 }
@@ -136,7 +136,7 @@ public:
                         return error;
                     }
                     std::cout << "exit after receiving ack" << std::endl;
-                    Write("decode_log.txt", decode_buffer);
+                    //Write("decode_log.txt", decode_buffer);
                     decode_buffer.clear();
                     return valid_ack;
                 }

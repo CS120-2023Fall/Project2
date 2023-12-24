@@ -143,7 +143,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 mes[2]->setText("Received ack, transmitted packet: " + std::to_string(transmitter.transmitted_packet), 
                     juce::NotificationType::dontSendNotification);
                 wait = false;
-                backoff_exp = rand() % 5 + 4;
+                backoff_exp = rand() % 3 + 5;
                 return;
             case Rx_Frame_Received_Type::valid_data: {
                 //std::cout << "receiver_buffer:" << receiver.receive_buffer.size() << std::endl;

@@ -313,7 +313,7 @@ public:
                 + (status == Tx_data ? (int)Frame_Type::data : (int)Frame_Type::ack);
             concatenate = (concatenate << PACKET_NUM_BITS)
                 + (status == Tx_data ?  transmitted_packet : received_packet - 1);
-            for (int i = NUM_MAC_HEADER_BITS - 1; i >= 0; --i) {
+            for (int i = NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS - 1; i >= 0; --i) {
                 int bit = concatenate >> i & 1;
                 if (bit == 1) {
                     add_samples_from_a_bit(transmitting_buffer, bit);
@@ -368,6 +368,7 @@ public:
                 transfer_num = 0;
                 transmitting_buffer.clear();
             }
+            Write("transmitting_buffer.txt", transmitting_buffer);
             return silence;
     }
 };

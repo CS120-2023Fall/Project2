@@ -33,10 +33,14 @@ class Receiver {
 public:
     Receiver() :preamble(default_trans_wire.preamble) {
         Initialize();
+        //for (auto i : preamble) {
+        //    std::cout << i;
+        //}
+        //std::cout << std::endl;
     }
 
     void Initialize() {
-        sync_buffer = std::deque<double>(350, 0.0);
+        sync_buffer = std::deque<double>(280, 0.0);
         symbol_code.clear();
         received_packet = 0;
         decode_buffer.clear();
@@ -185,6 +189,7 @@ public:
                 }
                 else {
                     matched_preamble_len = 0;
+                    break;
                 }
                 if (matched_preamble_len == 64) {
                     detected = true;
@@ -197,7 +202,7 @@ public:
                 }
             }
             if (detected) {
-                for (int j = i; j < num_samples; ++j) {
+                for (int j = i + 1; j < num_samples; ++j) {
                     decode_buffer.emplace_back(inBuffer[j]);
                 }
                 for (auto element : sync_buffer) {

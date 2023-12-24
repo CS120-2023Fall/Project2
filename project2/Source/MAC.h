@@ -13,7 +13,7 @@
 
 class MAC_Layer {
 public:
-    MAC_Layer() {}
+    MAC_Layer() = default;
     MAC_Layer(juce::Label *labels[], int num_labels) {
         if (num_labels > 5) {
             assert(0);

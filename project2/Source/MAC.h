@@ -127,9 +127,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// RxFrame
     if (macState == MAC_States_Set::RxFrame) {
-        Rx_Frame_Received_Type tmp = receiver.decode_one_packet(inBuffer, outBuffer, num_samples);
+        Rx_Frame_Received_Type tmp = receiver.decode_one_packet(inBuffer, outBuffer, num_samples, transmitter.transmitted_packet);
 
-        std::cout << "received packet type: " << (int)tmp << std::endl;
+        //std::cout << "received packet type: " << (int)tmp << std::endl;
         switch (tmp) {
             case Rx_Frame_Received_Type::error:
                 macState = MAC_States_Set::Idle;

@@ -99,7 +99,7 @@ public:
         // 0 still RX_frame--still decoding,
         // 1 VALID_ACK,
         // 2 VALID_DATA
-    Rx_Frame_Received_Type decode_one_packet(const float *inBuffer, float *outBuffer, int num_samples) {
+    Rx_Frame_Received_Type decode_one_packet(const float *inBuffer, float *outBuffer, int num_samples, int transmitted_packet = 0) {
         for (int i = 0; i < num_samples; i++) {
             decode_buffer.push_back(inBuffer[i]);
 
@@ -131,6 +131,9 @@ public:
                 }
                 // ack
                 if (Frame_Type(type) == Frame_Type::ack) {
+                    if (packet_num != transmitted_packet) {
+                        return error;
+                    }
                     std::cout << "exit after receiving ack" << std::endl;
                     Write("decode_log.txt", decode_buffer);
                     decode_buffer.clear();
@@ -138,6 +141,9 @@ public:
                 }
                 // data
                 else if (Frame_Type(type) == Frame_Type::data) {
+                    if (packet_num != received_packet) {
+                        return error;
+                    }
                     header_processed = true;
                     
                     //// start_position: bit index, remember x4

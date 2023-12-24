@@ -129,7 +129,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     if (macState == MAC_States_Set::RxFrame) {
         Rx_Frame_Received_Type tmp = receiver.decode_one_packet(inBuffer, outBuffer, num_samples, transmitter.transmitted_packet);
 
-        //std::cout << "received packet type: " << (int)tmp << std::endl;
+        std::cout << "received packet type: " << (int)tmp << std::endl;
         switch (tmp) {
             case Rx_Frame_Received_Type::error:
                 macState = MAC_States_Set::Idle;
@@ -145,25 +145,25 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 wait = false;
                 backoff_exp = rand() % 5 + 4;
                 return;
-            case Rx_Frame_Received_Type::valid_data:
+            case Rx_Frame_Received_Type::valid_data: {
                 //std::cout << "receiver_buffer:" << receiver.receive_buffer.size() << std::endl;
                 //std::cout << "sync_buffer:" << receiver.sync_buffer.size() << std::endl;
                 //std::cout << "decode_buffer:" << receiver.decode_buffer.size() << std::endl;
                 //std::cout << "symbol_code:" << receiver.symbol_code.size() << std::endl;
                 macState = MAC_States_Set::TxACK;
                 receiver.received_packet += 1;
-                bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, 
+                bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
                     Tx_frame_status::Tx_ack, receiver.received_packet);
                 //backoff_exp = rand() % 5 + 3;
                 //beforeTime_backoff = std::chrono::steady_clock::now();
                 mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
-                /////////////////////// delete me ////////////////////
-                //if (receiver.received_packet * NUM_PACKET_DATA_BITS >= 50000 && 
-                //    transmitter.transmitted_packet * NUM_PACKET_DATA_BITS >= 50000 ) {
-                //    macState = MAC_States_Set::LinkError;
-                //    std::cout << "transmit finish" << std::endl;
-                //}
-                //////////////////////////////////////////////////////////
+            }
+                break; 
+            case Rx_Frame_Received_Type::repeated_data:
+                macState = MAC_States_Set::TxACK;
+                bool feedback1 = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
+                    Tx_frame_status::Tx_ack, receiver.received_packet);
+                mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
                 break;
         }
     }

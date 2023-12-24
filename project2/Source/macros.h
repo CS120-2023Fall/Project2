@@ -13,7 +13,7 @@
 #define NUM_SRC_BITS 3
 #define NUM_TYPE_BITS 2
 #define NUM_DATE_LEN_BITS 16
-#define NUM_PACKET_DATA_BITS 10000
+#define NUM_PACKET_DATA_BITS 5000
 // packet index length
 #define PACKET_NUM_BITS 8
 // how many samples represent a bit

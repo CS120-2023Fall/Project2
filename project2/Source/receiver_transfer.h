@@ -25,7 +25,8 @@ enum  Rx_Frame_Received_Type {
     still_receiving = -1,
     error = 0,
     valid_ack = 1,
-    valid_data = 2
+    valid_data = 2,
+    repeated_data = 3
 };
 
 
@@ -141,7 +142,12 @@ public:
                 }
                 // data
                 else if (Frame_Type(type) == Frame_Type::data) {
-                    if (packet_num != received_packet) {
+                    if (packet_num < received_packet) {
+                        decode_buffer.clear();
+                        return repeated_data;
+                    }
+                    else if (packet_num > received_packet) {
+                        decode_buffer.clear();
                         return error;
                     }
                     header_processed = true;
@@ -171,7 +177,7 @@ public:
                     symbol_code.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
                 }
                 std::cout << "exit after receiving data" << std::endl;
-                Write("decode_log.txt", decode_buffer);
+                //Write("decode_log.txt", decode_buffer);
                 decode_buffer.clear();
                 header_processed = false;
                 return valid_data;

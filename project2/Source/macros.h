@@ -21,14 +21,14 @@
 
 #define NUM_MAC_HEADER_BITS (NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS + NUM_DATE_LEN_BITS)
 
-#define MY_MAC_ADDRESS 0b001
-#define OTHER_MAC_ADDRESS 0b010
+#define MY_MAC_ADDRESS 0b010
+#define OTHER_MAC_ADDRESS 0b001
 
 // record real time inBuffer. Stop in time. Otherwise, the vector bombs.
 #define RECORD_IN_LIVE false
 // We do not have to start the two computers simultaneously. The macro decides whether this
 // computer start transmitting first.
-#define START_TRANS_FIRST true
+#define START_TRANS_FIRST false
 #define CSMA_ONLY_RECEIVE false
 
 #define IS_ROUTER true

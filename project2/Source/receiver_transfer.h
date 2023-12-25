@@ -34,10 +34,6 @@ class Receiver {
 public:
     Receiver() :preamble(default_trans_wire.preamble) {
         Initialize();
-        //for (auto i : preamble) {
-        //    std::cout << i;
-        //}
-        //std::cout << std::endl;
     }
 
     void Initialize() {
@@ -48,8 +44,8 @@ public:
         matched_preamble_len = 0;
         header_processed = false;
         repeated_data_flag = false;
-        //start_index = -1;
-        //demoudulator = new Demoudulator();
+        repeated_packet_num = -1;
+        
 
     }
     void Write_symbols() {
@@ -147,6 +143,7 @@ public:
                     if (packet_num < received_packet) {
                         //decode_buffer.clear();
                         repeated_data_flag = true;
+                        repeated_packet_num = packet_num;
                         std::cout << "repeated" << std::endl;
                     }
                     else if (packet_num > received_packet) {
@@ -253,6 +250,7 @@ public:
     //std::vector<bool> bits;
     int start_index = -1;
     unsigned int received_packet = 0;
+    int repeated_packet_num{ -1 };
 
 private:
     int matched_preamble_len{ 0 };
@@ -308,7 +306,7 @@ public:
     /// inBuffer ,outBuffer and num_samples is not used,status indicate ack or data you want to add,it will add to the transmittion_buffer 
     /// The return value is not used.
     bool Add_one_packet(const float *inBuffer, float *outBuffer, int num_samples, Tx_frame_status status, 
-        unsigned int received_packet = 1) {
+        unsigned int received_packet = 1, int repeated_packet_num = -1) {
         // set these constants properly
         constexpr int data_bits_in_a_packet = NUM_PACKET_DATA_BITS;
         // 50000 / bits_in_a_packet is the number of packet
@@ -320,16 +318,22 @@ public:
             for (int i = 0; i < preamble.size(); ++i) {
                 add_samples_from_a_bit(transmitting_buffer, preamble[i]);
             }
-            // Add a gap between preamble and others.
-            //for (int i = 0; i < 10; ++i) {
-            //    transmitting_buffer.emplace_back(0.0);
-            //}
-            // 
+
             // Add destination, source, type, packet number(start from 0).
             int concatenate = (OTHER_MAC_ADDRESS << 5) + (MY_MAC_ADDRESS << 2)
                 + (status == Tx_data ? (int)Frame_Type::data : (int)Frame_Type::ack);
-            concatenate = (concatenate << PACKET_NUM_BITS)
-                + (status == Tx_data ?  transmitted_packet : received_packet - 1);
+            concatenate <<= PACKET_NUM_BITS;
+            if (status == Tx_data) {
+                concatenate += transmitted_packet;
+            }
+            else {
+                if (repeated_packet_num != -1) {
+                    concatenate += repeated_packet_num;
+                }
+                else {
+                    concatenate += received_packet - 1;
+                }
+            }
             for (int i = NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS - 1; i >= 0; --i) {
                 int bit = concatenate >> i & 1;
                 if (bit == 1) {

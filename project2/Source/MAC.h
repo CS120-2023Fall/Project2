@@ -9,8 +9,8 @@
 
 // millisecond
 #define ACK_TIME_OUT_THRESHOLD 1000
-#define RESEND_THRESHOLD 4
-double RTT = 70;
+#define RESEND_THRESHOLD 10
+double RTT = 30;
 
 class MAC_Layer {
 public:
@@ -106,9 +106,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             ///  Ack time
             auto currentTime = std::chrono::steady_clock::now();
             if (ackTimeOut_valid) {
-                // milisecond
-                double duration_millsecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_ack).count();
-                if (duration_millsecond > ACK_TIME_OUT_THRESHOLD) {
+                // millisecond
+                double duration_millisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_ack).count();
+                if (duration_millisecond > ACK_TIME_OUT_THRESHOLD) {
                     macState = MAC_States_Set::ACKTimeout;//resend the package
                     ackTimeOut_valid = false;
                     break;
@@ -143,11 +143,12 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             case Rx_Frame_Received_Type::valid_ack:
                 ackTimeOut_valid = false;
                 wait = false;
-                transmitter.transmitted_packet += 1; //the next staus transmit the next packet
+                transmitter.transmitted_packet += 1; //the next status transmit the next packet
                 macState = MAC_States_Set::Idle;
                 mes[2]->setText("transmitted packet: " + std::to_string(transmitter.transmitted_packet), 
                     juce::NotificationType::dontSendNotification);
                 backoff_exp = rand() % 3 + 5;
+                resend = 0;
                 return;
             case Rx_Frame_Received_Type::valid_data: {
                 macState = MAC_States_Set::TxACK;
@@ -160,7 +161,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             case Rx_Frame_Received_Type::repeated_data:
                 macState = MAC_States_Set::TxACK;
                 transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
-                    Tx_frame_status::Tx_ack, receiver.received_packet);
+                    Tx_frame_status::Tx_ack, receiver.received_packet, receiver.repeated_packet_num);
                 mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
                 break;
         }// end of switch

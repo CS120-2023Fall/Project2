@@ -9,7 +9,7 @@
 
 // millisecond
 #define ACK_TIME_OUT_THRESHOLD 1000
-#define RESEND_THRESHOLD 4
+#define RESEND_THRESHOLD 10
 double RTT = 70;
 
 class MAC_Layer {
@@ -106,7 +106,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             ///  Ack time
             auto currentTime = std::chrono::steady_clock::now();
             if (ackTimeOut_valid) {
-                // milisecond
+                // millisecond
                 double duration_millsecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_ack).count();
                 if (duration_millsecond > ACK_TIME_OUT_THRESHOLD) {
                     macState = MAC_States_Set::ACKTimeout;//resend the package
@@ -148,6 +148,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 mes[2]->setText("transmitted packet: " + std::to_string(transmitter.transmitted_packet), 
                     juce::NotificationType::dontSendNotification);
                 backoff_exp = rand() % 3 + 5;
+                resend = 0;
                 return;
             case Rx_Frame_Received_Type::valid_data: {
                 macState = MAC_States_Set::TxACK;

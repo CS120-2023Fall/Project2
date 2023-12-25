@@ -87,7 +87,7 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
     /// Idle
     if (macState == MAC_States_Set::Idle) {
-        std::cout << "idle" << std::endl;
+        //std::cout << "idle" << std::endl;
         do {
             /// Detect preamble, invoke detect_frame()
             bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);

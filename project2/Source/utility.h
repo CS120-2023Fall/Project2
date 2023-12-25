@@ -1,5 +1,6 @@
 #include <string>
 #include <vector>
+#include <deque>
 #include <iostream>
 #include <fstream>
 #include  <ostream>
@@ -139,6 +140,14 @@ inline void Write(const std::string& path, const std::vector<bool>& data) {
 inline void Write(const std::string& path, const std::vector<int>& data) {
 	auto size = (data.size() > MAX_WRITE_DATA_SIZE) ? MAX_WRITE_DATA_SIZE : data.size();
 	FILE* file = fopen(path.c_str(), "w");
+	for (int i = 0; i < data.size(); i++) {
+		fprintf(file, "%d", data[i]);
+	}
+	fclose(file);
+}
+inline void Write(const std::string &path, const std::deque<int> &data) {
+	auto size = (data.size() > MAX_WRITE_DATA_SIZE) ? MAX_WRITE_DATA_SIZE : data.size();
+	FILE *file = fopen(path.c_str(), "w");
 	for (int i = 0; i < data.size(); i++) {
 		fprintf(file, "%d", data[i]);
 	}

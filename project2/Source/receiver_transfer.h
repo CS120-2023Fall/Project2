@@ -244,8 +244,8 @@ public:
 public:
     //std::vector<double> receive_buffer = empty;
     std::deque<double> sync_buffer;
-    std::vector<double> decode_buffer;
-    std::vector<int>symbol_code; // decoded bits
+    std::deque<double> decode_buffer;
+    std::deque<int>symbol_code; // decoded bits
     std::vector<int> preamble;
     //std::vector<bool> bits;
     int start_index = -1;

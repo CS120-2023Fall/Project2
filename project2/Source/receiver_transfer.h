@@ -47,6 +47,7 @@ public:
         decode_buffer.clear();
         matched_preamble_len = 0;
         header_processed = false;
+        repeated_data_flag = false;
         //start_index = -1;
         //demoudulator = new Demoudulator();
 
@@ -121,6 +122,7 @@ public:
                     packet_num += header_vec[j] << offset;
                 }
                 std::cout << "packet num: " << packet_num << std::endl;
+                std::cout << "received packet: " << received_packet << std::endl;
                 std::cout << "== data? " << (Frame_Type(type) == Frame_Type::data) << std::endl;
                 // packet error
                 if (dest != MY_MAC_ADDRESS || (Frame_Type(type) != Frame_Type::ack && Frame_Type(type) != Frame_Type::data)) {
@@ -143,8 +145,9 @@ public:
                 // data
                 else if (Frame_Type(type) == Frame_Type::data) {
                     if (packet_num < received_packet) {
-                        decode_buffer.clear();
-                        return repeated_data;
+                        //decode_buffer.clear();
+                        repeated_data_flag = true;
+                        std::cout << "repeated" << std::endl;
                     }
                     else if (packet_num > received_packet) {
                         decode_buffer.clear();
@@ -162,15 +165,15 @@ public:
                     //decode_buffer.clear();
                     //return valid_data;
                 }
-                else {
-                    // this part is never run.
-                    std::cout << "else cir" << std::endl;
-                    decode_buffer.clear();
-                    return error;
-                }
             }
             // decode data.
             if (header_processed && decode_buffer.size() >= (NUM_MAC_HEADER_BITS + NUM_PACKET_DATA_BITS) * NUM_SAMPLES_PER_BIT) {
+                if (repeated_data_flag) {
+                    decode_buffer.clear();
+                    header_processed = false;
+                    repeated_data_flag = false;
+                    return repeated_data;
+                }
                 // start_position: bit index, remember x4
                 int start_position = NUM_MAC_HEADER_BITS;
                 for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
@@ -254,6 +257,7 @@ public:
 private:
     int matched_preamble_len{ 0 };
     bool header_processed{ false };
+    bool repeated_data_flag{ false };
 };
 
 enum Tx_frame_status {
@@ -273,7 +277,7 @@ public:
         transmitting_buffer.clear();
         transmitted_packet = 0;
     }
-    std::vector<double> transmitting_buffer;
+    std::deque<double> transmitting_buffer;
     std::vector<bool>bits = default_trans_wire.bits;
     //std::vector<unsigned int> symbols = default_trans_wire.symbols;
     // Preamble's length is 64 bits.
@@ -286,7 +290,7 @@ public:
 
 
     // convert a bit to 4 samples and add the samples to the end fo dest.
-    void add_samples_from_a_bit(std::vector<double> &dest, int bit) {
+    void add_samples_from_a_bit(std::deque<double> &dest, int bit) {
         if (bit == 0) {
             dest.emplace_back(-0.95);
             dest.emplace_back(-0.95);
@@ -372,7 +376,6 @@ public:
                     outBuffer[i] = 0;
                 }
                 else {
-
                     outBuffer[i] = transmitting_buffer[transfer_num];
                     transfer_num++;
                 }

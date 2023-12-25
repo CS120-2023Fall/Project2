@@ -66,7 +66,7 @@ public:
 
 private:
     int mac_address{ MY_MAC_ADDRESS };
-    juce::Label *mes[5]{ nullptr }; // array of pointers to send message    
+    juce::Label *mes[5]{ nullptr }; // array of pointers to send message
     int resend{ 0 }; // the number of resending times
     // ack time out detect
     // std::chrono::steady_clock::now()

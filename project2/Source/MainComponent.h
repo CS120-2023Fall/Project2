@@ -236,6 +236,13 @@ public:
                     in_data.emplace_back(inBuffer[i]);
                 }
                 mac.refresh_MAC(inBuffer, outBuffer, num_samples);
+
+                record_max = 0;
+                for (int i = 0; i < num_samples; ++i) {
+                    record_max = record_max > abs(inBuffer[i]) ? record_max : abs(inBuffer[i]);
+                }
+                mes0.setText("the record_max is :" + std::to_string(record_max), juce::dontSendNotification);
+
             }
             else if (juceState == juce_States_Set::STOP) {
                 for (int i = 0; i < num_samples; i++) {

@@ -7,7 +7,7 @@
 
 /// //////////////////////////
 ///  set the macros appropriately!!!
-#define QUIET_THRESHOLD 4
+#define QUIET_THRESHOLD 1.0
 
 constexpr const int maximum_packet = 50000 / PACKET_DATA_SIZE / BITS_PER_SYMBOL;
 constexpr const int CRC_SYMBOLS = NUM_CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc

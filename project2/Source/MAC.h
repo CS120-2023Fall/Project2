@@ -8,7 +8,7 @@
 #include "macros.h"
 
 // milisecond
-#define ACK_TIME_OUT_THRESHOLD 1200
+#define ACK_TIME_OUT_THRESHOLD 1000
 #define RECEND_THRESHOLD 4
 
 class MAC_Layer {
@@ -71,7 +71,7 @@ private:
     // std::chrono::steady_clock::now()
     std::chrono::time_point<std::chrono::steady_clock> beforeTime_ack;
     bool ackTimeOut_valid{ false };    
-    int backoff_exp{ 1 }; // exponent of the backoff. 2^m - 1, millisecond
+    int backoff_exp{ 0 }; // exponent of the backoff. 2^m - 1, millisecond
     std::chrono::time_point < std::chrono::steady_clock> beforeTime_backoff{ std::chrono::steady_clock::now() };
 public:
     Receiver receiver;
@@ -85,45 +85,45 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
     /// Idle
     if (macState == MAC_States_Set::Idle) {
-        auto currentTime = std::chrono::steady_clock::now();
-        // 1. ack time out
-        // ///////////////////////
-        // pass ackTimeout state, exit directly
-        ///////////////////////////////
-        if (ackTimeOut_valid) {
-            // milisecond
-            double duration_millsecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_ack).count();
-            if (duration_millsecond > ACK_TIME_OUT_THRESHOLD) {
-                macState = MAC_States_Set::ACKTimeout;//resend the package
-                ackTimeOut_valid = false;
-                /////////////////////////////// watch out here!!!!!!!!!! ///////////////
-                //macState = MAC_States_Set::LinkError;
-                /////////////////////////
+        do {
+            /// Detect preamble, invoke detect_frame()
+            bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
+            if (tmp) {
+                mes[3]->setText("preamble detecked " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet),
+                    juce::NotificationType::dontSendNotification);
+                macState = MAC_States_Set::RxFrame;
+                std::cout << "detect_frame" << std::endl;
+                // The computer has received a packet. It can start to transmit.
+                startTransmitting = true;
+                
+                // It must return due to the implementation of detect_frame().
                 return;
             }
-        }
-        // 2. detect preamble, invoke detect_frame()
-        bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
-        if (tmp) {
-            mes[3]->setText("preamble detecked " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet), 
-                juce::NotificationType::dontSendNotification);
-            macState = MAC_States_Set::RxFrame;
-            std::cout << "detect_frame" << std::endl;
-            ////std::cout <<"receiver_buffer:" <<receiver.receive_buffer.size() << std::endl;
-            //std::cout << "sync_buffer:" << receiver.sync_buffer.size() << std::endl;
-            //std::cout << "decode_buffer:" << receiver.decode_buffer.size() << std::endl;
-            //std::cout << "symbol_code:" << receiver.symbol_code.size() << std::endl;
-            // It must return due to the implementation of detect_frame().
-            return;
-        }
-        // 3. send data
-        double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
-        // +, - are prior to <<
-        double backoff = (1 << backoff_exp) - 1;
-        if (!CSMA_ONLY_RECEIVE && TxPending && (backoff == 0 || duration_milisecond >= backoff)) {
-            backoff_exp = 0;
-            macState = MAC_States_Set::CarrierSense;
-        }
+
+            ///  Ack time 
+            auto currentTime = std::chrono::steady_clock::now();
+            if (ackTimeOut_valid) {
+                // milisecond
+                double duration_millsecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_ack).count();
+                if (duration_millsecond > ACK_TIME_OUT_THRESHOLD) {
+                    macState = MAC_States_Set::ACKTimeout;//resend the package
+                    ackTimeOut_valid = false;
+                    break;
+                }
+            }
+
+            ///  Send data
+            if (TxPending) {
+                double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
+                // +, - are prior to <<
+                double backoff = (1 << backoff_exp) - 1;
+                if (!CSMA_ONLY_RECEIVE && (backoff == 0 || duration_milisecond >= backoff)) {
+                    backoff_exp = 0;
+                    macState = MAC_States_Set::CarrierSense;
+                }
+                break;
+            }
+        } while (0); // end of do while 0
     }
     /// RxFrame
     if (macState == MAC_States_Set::RxFrame) {
@@ -138,67 +138,57 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 return;
             case Rx_Frame_Received_Type::valid_ack:
                 ackTimeOut_valid = false;
+                wait = false;
                 transmitter.transmitted_packet += 1;//the next staus transmit the next packet
                 macState = MAC_States_Set::Idle;
-                mes[2]->setText("Received ack, transmitted packet: " + std::to_string(transmitter.transmitted_packet), 
+                mes[2]->setText("transmitted packet: " + std::to_string(transmitter.transmitted_packet), 
                     juce::NotificationType::dontSendNotification);
-                wait = false;
                 backoff_exp = rand() % 3 + 5;
                 return;
             case Rx_Frame_Received_Type::valid_data: {
-                //std::cout << "receiver_buffer:" << receiver.receive_buffer.size() << std::endl;
-                //std::cout << "sync_buffer:" << receiver.sync_buffer.size() << std::endl;
-                //std::cout << "decode_buffer:" << receiver.decode_buffer.size() << std::endl;
-                //std::cout << "symbol_code:" << receiver.symbol_code.size() << std::endl;
                 macState = MAC_States_Set::TxACK;
                 receiver.received_packet += 1;
                 bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
                     Tx_frame_status::Tx_ack, receiver.received_packet);
-                //backoff_exp = rand() % 5 + 3;
-                //beforeTime_backoff = std::chrono::steady_clock::now();
-                mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
-            }
+                mes[1]->setText("received packet: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
                 break; 
+            }
             case Rx_Frame_Received_Type::repeated_data:
                 macState = MAC_States_Set::TxACK;
-                bool feedback1 = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
+                transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
                     Tx_frame_status::Tx_ack, receiver.received_packet);
                 mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
                 break;
-        }
+        }// end of switch
     }
     /// TxACK
     if (macState == MAC_States_Set::TxACK) {
-        
-        auto currentTime = std::chrono::steady_clock::now();
-        double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
+        // Sending ack has no backoff, do immediately.
+
+        //auto currentTime = std::chrono::steady_clock::now();
+        //double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
         // +, - first, then << so use ()
-        double backoff = (1 << backoff_exp) - 1;
-        if (duration_milisecond <= backoff) {
-            return;
-        }
-        std::cout << "sending ack" << std::endl;
-        //if (!receiver.if_channel_quiet(inBuffer, num_samples)) {
+        //double backoff = (1 << backoff_exp) - 1;
+        //if (duration_milisecond <= backoff) {
         //    return;
         //}
+        std::cout << "sending ack" << std::endl;
         bool finish = transmitter.Trans(inBuffer, outBuffer, num_samples);
         if (finish) {
-            backoff_exp = rand() % 5 + 4;
+            backoff_exp = rand() % 2 + 5;
             macState = MAC_States_Set::Idle;
             std::cout << "finish sending ack" << std::endl;
         }
-        // The computer has received a packet. It can start to transmit.
-        startTransmitting = true;
         return;
     }
     /// CarrierSense
     if (macState == MAC_States_Set::CarrierSense) {
         if (receiver.if_channel_quiet(inBuffer, num_samples)) {
             macState = MAC_States_Set::TxFrame;
-            bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_data);
+            transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_data);
         }
         else {
-            backoff_exp = rand() % 5 + 4;
+            backoff_exp = rand() % 3 + 6;
             beforeTime_backoff = std::chrono::steady_clock::now();
             macState = MAC_States_Set::Idle;
             return;
@@ -222,12 +212,11 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         if (resend > RECEND_THRESHOLD) {
             macState = MAC_States_Set::LinkError;
         }
-        // should not reach here
         else {
             ++resend;
             // set backoff after ack timeout
             // [3, 8]
-            backoff_exp = rand() % 6 + 3;
+            backoff_exp = rand() % 5 + 3;
             beforeTime_backoff = std::chrono::steady_clock::now();
             macState = MAC_States_Set::Idle;
             wait = false;
@@ -236,6 +225,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// LinkError
     if (macState == MAC_States_Set::LinkError) {
+        std::cout << "link error" << std::endl;
         return;
     }
 }

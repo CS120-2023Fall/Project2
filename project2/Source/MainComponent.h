@@ -147,11 +147,11 @@ public:
 
 
         // transmit and receive button
-        csmaWithJamButton.setButtonText("csma_task");
-        csmaWithJamButton.setSize(110, 40);
-        csmaWithJamButton.setCentrePosition(330, 200);
-        csmaWithJamButton.onClick = [this] {start_csma = true; juceState = juce_States_Set::T_AND_R ; mac.Start();
-        mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
+        //csmaWithJamButton.setButtonText("csma_task");
+        //csmaWithJamButton.setSize(110, 40);
+        //csmaWithJamButton.setCentrePosition(330, 200);
+        //csmaWithJamButton.onClick = [this] {start_csma = true; juceState = juce_States_Set::T_AND_R ; mac.Start();
+        //mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
         //addAndMakeVisible(csmaWithJamButton);
 
         recordButton.setButtonText("reflect the sound");
@@ -226,12 +226,8 @@ public:
             KeepSilence( inBuffer, outBuffer,  num_samples);
             if (juceState == juce_States_Set::T_AND_R) {
                 mac.TxPending = false;
-                if (mac.startTransmitting && mac.transmitter.transmitted_packet * NUM_PACKET_DATA_BITS  < 50000) {
+                if (mac.startTransmitting && mac.transmitter.transmitted_packet * NUM_PACKET_DATA_BITS  < 50000 && !mac.wait) {
                     mac.TxPending = true;
-                }
-                // wait for ack
-                if (mac.wait) {
-                    mac.TxPending = false;
                 }
                
                 // Record the inBuffer. Watch out memory overflow.
@@ -241,8 +237,7 @@ public:
                 }
                 mac.refresh_MAC(inBuffer, outBuffer, num_samples);
             }
-            else if (juceState == juce_States_Set::STOP)
-            {
+            else if (juceState == juce_States_Set::STOP) {
                 for (int i = 0; i < num_samples; i++) {
                     outBuffer[i] = 0;
                 }
@@ -264,7 +259,7 @@ public:
                 std::cout << "received: " << mac.receiver.received_packet << std::endl;
                 std::cout << "transitted: " << mac.transmitter.transmitted_packet << std::endl;
                 stopButton.triggerClick();
-            }   
+            }
 
             break;
         }

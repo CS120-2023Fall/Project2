@@ -10,6 +10,7 @@
 // milisecond
 #define ACK_TIME_OUT_THRESHOLD 1000
 #define RECEND_THRESHOLD 4
+double RTT = 85;
 
 class MAC_Layer {
 public:
@@ -73,6 +74,7 @@ private:
     bool ackTimeOut_valid{ false };    
     int backoff_exp{ 0 }; // exponent of the backoff. 2^m - 1, millisecond
     std::chrono::time_point < std::chrono::steady_clock> beforeTime_backoff{ std::chrono::steady_clock::now() };
+    std::chrono::time_point<std::chrono::steady_clock> beforeTime_carrier_sense{ std::chrono::steady_clock::now() };
 public:
     Receiver receiver;
     Transfer transmitter;
@@ -100,7 +102,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 return;
             }
 
-            ///  Ack time 
+            ///  Ack time
             auto currentTime = std::chrono::steady_clock::now();
             if (ackTimeOut_valid) {
                 // milisecond
@@ -120,6 +122,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 if (!CSMA_ONLY_RECEIVE && (backoff == 0 || duration_milisecond >= backoff)) {
                     backoff_exp = 0;
                     macState = MAC_States_Set::CarrierSense;
+                    beforeTime_carrier_sense = std::chrono::steady_clock::now();
                 }
                 break;
             }
@@ -139,7 +142,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             case Rx_Frame_Received_Type::valid_ack:
                 ackTimeOut_valid = false;
                 wait = false;
-                transmitter.transmitted_packet += 1;//the next staus transmit the next packet
+                transmitter.transmitted_packet += 1; //the next staus transmit the next packet
                 macState = MAC_States_Set::Idle;
                 mes[2]->setText("transmitted packet: " + std::to_string(transmitter.transmitted_packet), 
                     juce::NotificationType::dontSendNotification);
@@ -184,8 +187,12 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     /// CarrierSense
     if (macState == MAC_States_Set::CarrierSense) {
         if (receiver.if_channel_quiet(inBuffer, num_samples)) {
-            macState = MAC_States_Set::TxFrame;
             transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_data);
+            double duration = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - beforeTime_carrier_sense).count();
+            // Sense a full rtt.
+            if (duration > RTT) {
+                macState = MAC_States_Set::TxFrame;
+            }
         }
         else {
             backoff_exp = rand() % 3 + 6;

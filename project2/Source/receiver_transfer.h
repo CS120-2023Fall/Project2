@@ -9,13 +9,13 @@
 ///  set the macros appropriately!!!
 #define QUIET_THRESHOLD 1.0
 
-constexpr const int maximum_packet = 50000 / PACKET_DATA_SIZE / BITS_PER_SYMBOL;
+//constexpr const int maximum_packet = 50000 / PACKET_DATA_SIZE / BITS_PER_SYMBOL;
 constexpr const int CRC_SYMBOLS = NUM_CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc
-std::vector<double > empty=std::vector<double>(0);
-std::deque<double> empty_deque=std::deque<double>(0,0.0);
-constexpr const int samples_per_symbol = samples_per_bit;
+//std::vector<double > empty=std::vector<double>(0);
+//std::deque<double> empty_deque=std::deque<double>(0,0.0);
+//constexpr const int samples_per_symbol = samples_per_bit;
 //constexpr const int MAC_PACKET_SAMPLES = PREAMBLE_SIZE + (OVERHEAD_SYMBOLS + PACKET_DATA_SIZE) * samples_per_symbol;//how many samples in a mac packet
-constexpr const int PHY_PACKET_SAMPLES = PREAMBLE_SIZE + (CRC_SYMBOLS+ PACKET_DATA_SIZE ) * samples_per_symbol;//how many samples in a phy packet
+//constexpr const int PHY_PACKET_SAMPLES = PREAMBLE_SIZE + (CRC_SYMBOLS+ PACKET_DATA_SIZE ) * samples_per_symbol;//how many samples in a phy packet
 
 enum class  Frame_Type {
     ack = 0b01,
@@ -38,7 +38,7 @@ public:
 
     void Initialize() {
         sync_buffer = std::deque<double>(280, 0.0);
-        symbol_code.clear();
+        received_bits.clear();
         received_packet = 0;
         decode_buffer.clear();
         matched_preamble_len = 0;
@@ -49,7 +49,7 @@ public:
 
     }
     void Write_symbols() {
-        Write("project2_bits_receiver.txt", symbol_code);
+        Write("project2_bits_receiver.txt", received_bits);
     }
 
     // decode a NUM_SAMPLES_PER_BIT samples
@@ -174,7 +174,7 @@ public:
                 // start_position: bit index, remember x4
                 int start_position = NUM_MAC_HEADER_BITS;
                 for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
-                    symbol_code.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
+                    received_bits.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
                 }
                 std::cout << "exit after receiving data" << std::endl;
                 //Write("decode_log.txt", decode_buffer);
@@ -245,7 +245,7 @@ public:
     //std::vector<double> receive_buffer = empty;
     std::deque<double> sync_buffer;
     std::deque<double> decode_buffer;
-    std::deque<int>symbol_code; // decoded bits
+    std::deque<int>received_bits; // decoded bits
     std::vector<int> preamble;
     //std::vector<bool> bits;
     int start_index = -1;

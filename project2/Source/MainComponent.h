@@ -116,11 +116,7 @@ public:
             Write("inBuffer_log.txt", in_data);
           }
           in_data.clear();
-        //std::cout << "bits: ";
-        //for (int i = 0; i < 16; ++i) {
-        //    std::cout << default_trans_wire.bits[i];
-        //}
-        //std::cout << std::endl;
+
         };
         addAndMakeVisible(stopButton);
 

@@ -5,6 +5,7 @@
 #include <fstream>
 #include  <ostream>
 #define MAX_WRITE_DATA_SIZE 24000
+
 //file operator
 inline std::vector<bool> Read_bits(const std::string& path)//read_bits_from file
 {
@@ -42,19 +43,15 @@ inline std::vector<bool> Read_bits_from_bin(const std::string& path) {
 	std::vector<bool>bits;
 	char c;
 	while (f.get(c)) {
-
-
 		for (int j = 7; j >= 0; j--) {
 			bool bit = static_cast<bool>(c >> j) & 1;
 			bits.push_back(bit);
 			o << (int)bit;
 		}
-
-
-
 	}
 	return bits;
 }
+
 inline void Tranlate_from_A_bin_To_B_Bin(const std::string& path, const std::string& b_path) {
 	std::ifstream f(path.c_str(), std::ios::binary | std::ios::in);
 	std::ofstream o(b_path.c_str(), std::ios::binary|std::ios::out);
@@ -69,8 +66,6 @@ inline void Tranlate_from_A_bin_To_B_Bin(const std::string& path, const std::str
 			bits.push_back(bit);
 		}
 		o << (char)c;
-
-
 	}
 }
 inline void Write_bin(std::vector<bool>bits,const std::string& path) {
@@ -383,35 +378,7 @@ float* smooth_float(float* data, unsigned int size) {
 	}
 	return smoothed;
 }
-//template<typename T1, typename T2>
-//double calculateCorrelationShip(const std::deque<T1>& data1, const std::vector<T2>& data2, int start_index_of_data1, int start_index_of_data2, int num) {
-//	//first calculate E(data1) and E(data2)
-//	double data1_mean, data2_mean;
-//	double sum_of_data_1 = 0, sum_of_data_2 = 0;
-//	for (int i = 0; i < num; i++) {
-//		int index_data1 = start_index_of_data1 + i;
-//		int index_data2 = start_index_of_data2 + i;
-//		sum_of_data_1 += data1[index_data1];
-//		sum_of_data_2 += data2[index_data2];
-//
-//	}
-//	data1_mean = sum_of_data_1 / num;
-//	data2_mean = sum_of_data_2 / num;
-//	double sigma_data1 = 0, sigma_data2 = 0;
-//	double cov_data1_data2 = 0;
-//	for (int i = 0; i < num; i++) {
-//		int index_data1 = start_index_of_data1 + i;
-//		int index_data2 = start_index_of_data2 + i;
-//		sigma_data1 += (data1[index_data1] - data1_mean) * (data1[index_data1] - data1_mean);
-//		sigma_data2 += (data2[index_data1] - data2_mean) * (data2[index_data2] - data2_mean);
-//		cov_data1_data2 += (data1[index_data1] - data1_mean) * (data2[index_data2] - data2_mean);
-//
-//	}
-//	double ans = (cov_data1_data2) / (std::sqrt(sigma_data1) * std::sqrt(sigma_data2));
-//
-//	return ans;
-//
-//}
+
 template<typename T1, typename T2>
 double calculateCorrelationShip(const std::vector<T1>& data1, const std::vector<T2>& data2, int start_index_of_data1, int start_index_of_data2, int num) {
 	//first calculate E(data1) and E(data2)

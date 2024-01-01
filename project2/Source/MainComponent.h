@@ -233,12 +233,9 @@ public:
                 }
                 mac.refresh_MAC(inBuffer, outBuffer, num_samples);
 
-                //record_max = 0;
-                //for (int i = 0; i < num_samples; ++i) {
-                //    record_max = record_max > abs(inBuffer[i]) ? record_max : abs(inBuffer[i]);
-                //}
-                //mes0.setText("the record_max is :" + std::to_string(record_max), juce::dontSendNotification);
-
+                if (TEST_CRC) {
+                    stopButton.triggerClick();
+                }
             }
             else if (juceState == juce_States_Set::STOP) {
                 for (int i = 0; i < num_samples; i++) {
@@ -246,6 +243,7 @@ public:
                 }
             }
             else if (juceState == juce_States_Set::TEST) {
+                double pi = juce::MathConstants<double>::pi;
                 for (int i = 0; i < num_samples; ++i) {
                     outBuffer[i] = std::sin(2 * pi * 100 * i/48000);
                 }

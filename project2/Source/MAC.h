@@ -28,6 +28,7 @@ public:
     }
     // update MAC states
     void refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples);
+    //bool test_crc();
     // prepare for next packet
     void Start() {
         macState = MAC_States_Set::Idle;
@@ -84,7 +85,24 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
         outBuffer[i] = 0;
     }
 }
+
+//bool MAC_Layer::test_crc() {
+//    std::vector<int> check_crc(63 * 100, 0);
+//    char calculate_bits[500] = { 0 };
+//    char tmp = 0;
+//    for (int i = 0; i < 50000; ++i) {
+//        for (int j = 0; j < 496; ++j) {
+//            tmp = (tmp << 1) + default_trans_wire.
+//        }
+//    }
+//}
+
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
+    //if (TEST_CRC) {
+    //    if (test_crc()) {
+    //        return;
+    //    }
+    //}
     /// Idle
     if (macState == MAC_States_Set::Idle) {
         //std::cout << "idle" << std::endl;

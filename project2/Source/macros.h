@@ -5,19 +5,19 @@
 /////////////////////////////////
 // set these macros properly!///
 /////////////////////////////////
-//
-// This is not used.
 
-#define NUM_CRC_BITS 8
+//#define NUM_CRC_BITS 8
 #define NUM_DEST_BITS 3
 #define NUM_SRC_BITS 3
 #define NUM_TYPE_BITS 2
 #define NUM_DATE_LEN_BITS 16
+// how many bits in a packet
 #define NUM_PACKET_DATA_BITS 5000
 // packet index length
 #define PACKET_NUM_BITS 8
 // how many samples represent a bit
 #define NUM_SAMPLES_PER_BIT 4
+#define NUM_CRC_BITS_PER_PACKET 320
 
 #define NUM_MAC_HEADER_BITS (NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS + NUM_DATE_LEN_BITS)
 
@@ -34,3 +34,6 @@
 #define IS_ROUTER true
 #define MY_IP 0x111
 #define PING_MODE true
+
+#define TEST_CRC false
+

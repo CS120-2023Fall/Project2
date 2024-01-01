@@ -14,26 +14,26 @@
 
 // These macros are aborted.
 /////////////////////////////////////////////////////////////
-#define MAXIMUM_TOTAL_SECONDS 5//total time it will run most
-#define PREAMBLE_SIZE 512 // the number of preamble samples
-#define PACKET_DATA_SIZE 500 ////the number of packet, not used by fbz!!!
+//#define MAXIMUM_TOTAL_SECONDS 5//total time it will run most
+//#define PREAMBLE_SIZE 512 // the number of preamble samples
+//#define PACKET_DATA_SIZE 500 ////the number of packet, not used by fbz!!!
 // I think PACKET_DATA_SIZE is the number of symbols in a packet.
 // --fbz
-#define END_FRAME_SIZE 48 //the number of empty zero between packets
-const double pi = juce::MathConstants<double>::pi;
-bool psk_mode = true;
-//fsk_mode
-bool test_for_repeat_preamble = false;
-//
-bool up_down = true;
-constexpr const double freq_carrier_0 = 3000;
-constexpr const double freq_carrier_1 = 5000;
-//psk_mode
-constexpr const double freq_carrier_psk = 10000;
-constexpr const double freq_up_preamble = 1000;
-constexpr const double freq_down_preamble = 1000;
-constexpr const int default_sample_rate = 48000;
-constexpr const int samples_per_bit = default_sample_rate / 1000 / 2;
+//#define END_FRAME_SIZE 48 //the number of empty zero between packets
+//const double pi = juce::MathConstants<double>::pi;
+//bool psk_mode = true;
+////fsk_mode
+//bool test_for_repeat_preamble = false;
+////
+//bool up_down = true;
+//constexpr const double freq_carrier_0 = 3000;
+//constexpr const double freq_carrier_1 = 5000;
+////psk_mode
+//constexpr const double freq_carrier_psk = 10000;
+//constexpr const double freq_up_preamble = 1000;
+//constexpr const double freq_down_preamble = 1000;
+//constexpr const int default_sample_rate = 48000;
+//constexpr const int samples_per_bit = default_sample_rate / 1000 / 2;
 // TRANSMITTER_CONSTANTS
 /////////////////////////////////////////////////////////////////////
 
@@ -83,10 +83,10 @@ constexpr const int samples_per_bit = default_sample_rate / 1000 / 2;
 //};
 // a transmitter_with_psk_ask
 
-#define BITS_PER_SYMBOL 4// the symbol represent how many bit
-float max_amplitude = 1;
-bool check_crc = false;//the crc is 8 bit 
-constexpr const unsigned int CRC_SYMBOL_SIZE = 8 / BITS_PER_SYMBOL;
+//#define BITS_PER_SYMBOL 4// the symbol represent how many bit
+//float max_amplitude = 1;
+//bool check_crc = false;//the crc is 8 bit 
+//constexpr const unsigned int CRC_SYMBOL_SIZE = 8 / BITS_PER_SYMBOL;
   //!CRC_CONSTANTS
 
 
@@ -95,15 +95,24 @@ public:
     Transmitter_with_wire() = default;
     Transmitter_with_wire(const std::string &path, int _sample_rate) :sample_rate(_sample_rate) {
         bits = Read_bits_from_bin(path);//read the bits from a bin file
+        // every 500 bits have a crc calculation
+        for (int i = 0; i < bits.size(); i += 500) {
+            char tmp = 0;
+            for (int j = 0; j < 496; ++j) {
+                tmp = (tmp << 1) + (char)bits[i + j];
+                if ((j + 1) % 8 == 0) {
+                    bytes_for_crc_calculation[j / 8] = tmp;
+                    tmp = 0;
+                }
+            }
+            for (int j = 496; j < 500; ++j) {
+                tmp = (tmp << 1) + bits[i + j];
+            }
+            bytes_for_crc_calculation[62] = tmp;
+            std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, sizeof(bytes_for_crc_calculation) - 4, CRC::CRC_32());
+            crc_32_t.emplace_back((int)crc);
+        }
         generate_preamble();
-        generate_crc();
-        //seperation_num = BITS_PER_SYMBOL;//seperation_num is the compress how many bit
-        //symbols = translate_from_bits_vector_to_unsigned_int_vector(bits, seperation_num);//bit_to_symbol
-        //generate_carrier();//generate carrier_0 and carrier_1
-        //generate_length();
-        //generate_packet_sequences();//add the preamble and data together
-        //Write_symbols();// for debug
-        //generate_knots();//to determine the amplitude range
     }
 
     void generate_preamble() {
@@ -115,24 +124,31 @@ public:
         preamble[63] = 1;
     }
 
+    // 500 date bits have 32-bit crc.
     void generate_crc() {
-        int size = bits.size();
-        unsigned int data_bits_per_packet = BITS_PER_SYMBOL * PACKET_DATA_SIZE;
-        for (int i = 0; i < size; i += data_bits_per_packet) {
-            std::vector<bool>bits_slice;
-            uint8_t crc_8;
-            for (int j = i; j < i + data_bits_per_packet; j++) {
-                bits_slice.push_back(bits[j]);
-            }
-            int data_size;
-            unsigned char *data = unsigned_int_to_unsigned_char_star(from_bits_vector_to_unsigned_int(bits_slice), data_size);
-            crc_8 = CRC::CalculateBits(data, data_bits_per_packet, CRC::CRC_8());
-            std::vector<bool> crc_8_vector = from_uint8_t_to_bits_vector(crc_8);
-            for (int i = 0; i <= 7; i++) {
-                CRC_bits.push_back(crc_8_vector[i]);
-            }
-        }
+        CRC::Table<std::uint32_t, 32> crc_table(CRC::CRC_32());
+        //std::uint32_t crc = CRC::Calculate()
     }
+
+
+    //void generate_crc() {
+    //    int size = bits.size();
+    //    unsigned int data_bits_per_packet = BITS_PER_SYMBOL * PACKET_DATA_SIZE;
+    //    for (int i = 0; i < size; i += data_bits_per_packet) {
+    //        std::vector<bool>bits_slice;
+    //        uint8_t crc_8;
+    //        for (int j = i; j < i + data_bits_per_packet; j++) {
+    //            bits_slice.push_back(bits[j]);
+    //        }
+    //        int data_size;
+    //        unsigned char *data = unsigned_int_to_unsigned_char_star(from_bits_vector_to_unsigned_int(bits_slice), data_size);
+    //        crc_8 = CRC::CalculateBits(data, data_bits_per_packet, CRC::CRC_8());
+    //        std::vector<bool> crc_8_vector = from_uint8_t_to_bits_vector(crc_8);
+    //        for (int i = 0; i <= 7; i++) {
+    //            CRC_bits.push_back(crc_8_vector[i]);
+    //        }
+    //    }
+    //}
 
     //void generate_knots() {
     //    unsigned int ask_num = 1 << (seperation_num - 1);
@@ -231,8 +247,10 @@ public:
     std::deque<double> transmittion_buffer;
     int sample_rate;
 
-    uint8_t CRC_8;
-    std::vector<bool> CRC_bits;
+    // crc result, 32 bit width data
+    std::vector<int> crc_32_t;
+    // crc needs char[]
+    char bytes_for_crc_calculation[63]{ 0 };
     //int seperation_num;
     //std::vector<unsigned int > symbols;
     //std::vector<double> preamble_reverse;
@@ -245,7 +263,7 @@ public:
     //float amplitude_step;
     //std::vector<double>knots;
 };
-Transmitter_with_wire default_trans_wire("INPUT.bin", default_sample_rate);
+Transmitter_with_wire default_trans_wire("INPUT.bin", 48000);
 
 //Transmitter default_trans("INPUT.txt", default_sample_rate);
 

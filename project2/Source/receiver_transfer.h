@@ -10,7 +10,7 @@
 #define QUIET_THRESHOLD 1.0
 
 //constexpr const int maximum_packet = 50000 / PACKET_DATA_SIZE / BITS_PER_SYMBOL;
-constexpr const int CRC_SYMBOLS = NUM_CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc
+//constexpr const int CRC_SYMBOLS = NUM_CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc
 //std::vector<double > empty=std::vector<double>(0);
 //std::deque<double> empty_deque=std::deque<double>(0,0.0);
 //constexpr const int samples_per_symbol = samples_per_bit;
@@ -32,7 +32,7 @@ enum  Rx_Frame_Received_Type {
 
 class Receiver {
 public:
-    Receiver() :preamble(default_trans_wire.preamble) {
+    Receiver() :preamble(default_trans_wire.preamble), check_crc_bits(NUM_CRC_BITS_PER_PACKET, 0) {
         Initialize();
     }
 
@@ -45,8 +45,6 @@ public:
         header_processed = false;
         repeated_data_flag = false;
         repeated_packet_num = -1;
-        
-
     }
     void Write_symbols() {
         Write("project2_bits_receiver.txt", received_bits);
@@ -163,23 +161,67 @@ public:
                     //return valid_data;
                 }
             }
-            // decode data.
-            if (header_processed && decode_buffer.size() >= (NUM_MAC_HEADER_BITS + NUM_PACKET_DATA_BITS) * NUM_SAMPLES_PER_BIT) {
+            // decode data and crc
+            if (header_processed && decode_buffer.size() >= (NUM_MAC_HEADER_BITS + NUM_PACKET_DATA_BITS + NUM_CRC_BITS_PER_PACKET) * NUM_SAMPLES_PER_BIT) {
                 if (repeated_data_flag) {
                     decode_buffer.clear();
                     header_processed = false;
                     repeated_data_flag = false;
                     return repeated_data;
                 }
-                // start_position: bit index, remember x4
+                // start_position: Data part start position. bit index, remember x4
                 int start_position = NUM_MAC_HEADER_BITS;
+                std::deque<int> received_bits_tmp;
                 for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
-                    received_bits.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
+                    received_bits_tmp.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
+                    //received_bits.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
                 }
-                std::cout << "exit after receiving data" << std::endl;
-                //Write("decode_log.txt", decode_buffer);
+                // decode crc
+                for (int bit_index = start_position + NUM_PACKET_DATA_BITS, i = 0; bit_index < NUM_CRC_BITS_PER_PACKET; ++bit_index, ++i) {
+                    check_crc_bits[i] = decode_a_bit(decode_buffer, bit_index * 4);
+                }
+                // calculate and check crc
+                bool crc_correct = true;                
+                int received_tmp_read_count = 0;  // count for bits
+                char bytes_for_calculation[63] = { 0 };  // for 500 bits
+                int check_crc_read_count = 0;  // a reader for check_crc_bits[]
+                for (int read_tmp_bits = 0; read_tmp_bits < NUM_PACKET_DATA_BITS && crc_correct; read_tmp_bits += 500) {
+                    char tmp_byte = 0;
+                    for (int i = 0; i < 496; ++i) {
+                        tmp_byte = (tmp_byte << 1) + (char)received_bits_tmp[i + read_tmp_bits];
+                        if ((i + 1) % 8 == 0) {
+                            bytes_for_calculation[i / 8] = tmp_byte;
+                            tmp_byte = 0;
+                        }
+                    }
+                    for (int i = 496; i < 500; ++i) {
+                        tmp_byte = (tmp_byte << 1) + received_bits_tmp[i + read_tmp_bits];
+                    }
+                    bytes_for_calculation[62] = tmp_byte;
+                    std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, sizeof(bytes_for_calculation) - 4, CRC::CRC_32());
+                    for (int i = 7; i >= 0; --i) {
+                        if ((crc >> i & 1) != check_crc_bits[check_crc_read_count++]) {
+                            crc_correct = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (crc_correct) {
+                    for (auto &i : received_bits_tmp) {
+                        received_bits.emplace_back(i);
+                    }
+                }
+
                 decode_buffer.clear();
                 header_processed = false;
+                if (!crc_correct) {
+                    std::cout << "crc not passed" << std::endl;
+                    return error;
+                }
+
+                std::cout << "exit after receiving data" << std::endl;
+                //Write("decode_log.txt", decode_buffer);
                 return valid_data;
             }
         }
@@ -245,9 +287,9 @@ public:
     //std::vector<double> receive_buffer = empty;
     std::deque<double> sync_buffer;
     std::deque<double> decode_buffer;
-    std::deque<int>received_bits; // decoded bits
+    std::deque<int>received_bits; // Decoded bits. Received message.
     std::vector<int> preamble;
-    //std::vector<bool> bits;
+    std::vector<int> check_crc_bits; // 0 or 1 int
     int start_index = -1;
     unsigned int received_packet = 0;
     int repeated_packet_num{ -1 };
@@ -270,7 +312,7 @@ public:
         Initialize();
     }
     void Initialize() {
-        CRC_symbols.clear();
+        //CRC_symbols.clear();
         transfer_num = 0;
         transmitting_buffer.clear();
         transmitted_packet = 0;
@@ -280,9 +322,9 @@ public:
     //std::vector<unsigned int> symbols = default_trans_wire.symbols;
     // Preamble's length is 64 bits.
     std::vector<int> preamble;
-    std::vector<double> packet_sequences;
-    std::vector<bool> CRC_bits;
-    std::vector<unsigned> CRC_symbols;
+    //std::vector<double> packet_sequences;
+    //std::vector<bool> CRC_bits;
+    //std::vector<unsigned> CRC_symbols;
     int transfer_num = 0;
     int transmitted_packet = 0;
 
@@ -358,6 +400,13 @@ public:
                 for (int i = transmitted_packet * data_bits_in_a_packet; i < (transmitted_packet + 1) * data_bits_in_a_packet; ++i) {
                     add_samples_from_a_bit(transmitting_buffer, (int)bits[i]);
                 }
+                // add crc
+                for (int i = 0; i < 10; ++i) {
+                    unsigned crc_t = default_trans_wire.crc_32_t[transmitted_packet * 10 + i];
+                    for (int j = 0; j < 32; ++j) {
+                        add_samples_from_a_bit(transmitting_buffer, (int)(crc_t >> j & 1));
+                    }
+                }
             }
             else if (status == Tx_ack) {
                 for (int i = 0; i < 500; ++i) {
@@ -370,7 +419,7 @@ public:
 
     //inBuffer is not used,outBuffer is used to read from tranmittion_buffer,and read the num_samples sample
     //trans finished then return true
-    bool Trans(const float *inBuffer, float *outBuffer, int num_samples)    
+    bool Trans(const float *inBuffer, float *outBuffer, int num_samples)
     {
         bool silence = false;
 

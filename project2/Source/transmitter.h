@@ -18,7 +18,7 @@ public:
     Transmitter_with_wire() = default;
     Transmitter_with_wire(const std::string &path, int _sample_rate) :sample_rate(_sample_rate) {
         bits = Read_bits_from_bin(path);//read the bits from a bin file
-         //every 504 bits (63 Bytes) have a crc calculation. 99 calculation in total.
+        //every 504 bits (63 Bytes) have a crc calculation. 99 calculation in total.
         for (int i = 0; i + 504 < (int)bits.size(); i += 504) {
             char oneByte = 0;
             // One turn of crc calculation.
@@ -43,8 +43,8 @@ public:
                 oneByte = 0;
             }
         }
-        //std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, 464, CRC::CRC_32());
-        //crc_32_t.emplace_back((int)crc);
+        std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, 464, CRC::CRC_32());
+        crc_32_t.emplace_back((int)crc);
         generate_preamble();
     }
 

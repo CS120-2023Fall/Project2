@@ -164,6 +164,19 @@ public:
                     bit_index < start_position + NUM_PACKET_DATA_BITS + NUM_CRC_BITS_PER_PACKET; ++bit_index, ++i) {
                     check_crc_bits[i] = decode_a_bit(decode_buffer, bit_index * 4);
                 }
+
+                //Write("received_tmp.txt", received_bits_tmp);
+                //FILE *file = fopen("crc_tmp.txt", "w");
+                //for (int i = 0; i < 320; ++i) {
+                //    fprintf(file, "%d ", check_crc_bits[i]);
+                //    if ((i + 1) % 32 == 0) {
+                //        fprintf(file, "\n");
+                //    }
+                //}
+                //fclose(file);
+
+                //exit(1);
+
                 // calculate and check crc
                 bool crc_correct = true;
                 //int received_tmp_read_count = 0;  // count for bits
@@ -208,7 +221,7 @@ public:
                     }
                 }  // end of processing last 464 bits
 
-                //crc_correct = true;
+                crc_correct = true;
                 if (crc_correct) {
                     for (auto &i : received_bits_tmp) {
                         received_bits.emplace_back(i);

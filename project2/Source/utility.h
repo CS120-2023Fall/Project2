@@ -112,14 +112,25 @@ inline void Write(const std::string& path, const std::vector<double>& data, std:
 	fprintf(file, "];");
 	fclose(file);
 }
+
+inline void Write(const std::string &path, const std::deque<double> &data) {
+	auto size = (data.size() > MAX_WRITE_DATA_SIZE) ? MAX_WRITE_DATA_SIZE : data.size();
+	FILE *file = fopen(path.c_str(), "w");
+	fprintf(file, "%d\n", size);
+	fprintf(file, "[");
+	for (int i = 0; i < size; i++) {
+		fprintf(file, "%f,", data[i]);
+	}
+	fprintf(file, "]");
+	fclose(file);
+}
+
 inline void Write(const std::string& path, const std::vector<double>& data) {
 	auto size = (data.size() > MAX_WRITE_DATA_SIZE) ? MAX_WRITE_DATA_SIZE : data.size();
 	FILE* file = fopen(path.c_str(), "w");
 	fprintf(file, "[");
 	for (int i = 0; i < size; i++) {
 		fprintf(file, "%f,", data[i]);
-
-
 	}
 	fprintf(file, "]");
 	fclose(file);

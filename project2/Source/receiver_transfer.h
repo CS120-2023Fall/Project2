@@ -403,7 +403,8 @@ public:
                 for (int i = 0; i < 10; ++i) {
                     unsigned crc_t = default_trans_wire.crc_32_t[transmitted_packet * 10 + i];
                     for (int j = 31; j >= 0; --j) {
-                        add_samples_from_a_bit(transmitting_buffer, (int)(crc_t >> j & 1));
+                        int bit = (crc_t >> j & 1);
+                        add_samples_from_a_bit(transmitting_buffer, bit);
                     }
                 }
             }
@@ -436,7 +437,7 @@ public:
                 transfer_num = 0;
                 transmitting_buffer.clear();
             }
-            //Write("transmitting_buffer.txt", transmitting_buffer);
+            Write("transmitting_buffer.txt", transmitting_buffer);
             return silence;
     }
 };

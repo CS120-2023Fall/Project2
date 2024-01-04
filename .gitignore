@@ -29,3 +29,7 @@ project2/Builds/VisualStudio2022/OUTPUT_CSMA.bin
 project2/Builds/VisualStudio2022/decode_log.txt
 project2/Builds/VisualStudio2022/RTT_log.txt
 project2/Builds/VisualStudio2022/transmitting_buffer.txt
+project2/Builds/VisualStudio2022/INPUT_bin_copy.txt
+project2/Builds/VisualStudio2022/crc.txt
+project2/Builds/VisualStudio2022/crc_tmp.txt
+project2/Builds/VisualStudio2022/received_tmp.txt

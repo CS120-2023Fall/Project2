@@ -1,8 +1,10 @@
 #pragma once
 #include<deque>
 #include <vector>
+#include<iomanip>
 #include "transmitter.h"
 #include "macros.h"
+
 
 
 /// //////////////////////////
@@ -165,15 +167,15 @@ public:
                     check_crc_bits[i] = decode_a_bit(decode_buffer, bit_index * 4);
                 }
 
-                //Write("received_tmp.txt", received_bits_tmp);
-                //FILE *file = fopen("crc_tmp.txt", "w");
-                //for (int i = 0; i < 320; ++i) {
-                //    fprintf(file, "%d ", check_crc_bits[i]);
-                //    if ((i + 1) % 32 == 0) {
-                //        fprintf(file, "\n");
-                //    }
-                //}
-                //fclose(file);
+                Write("received_tmp.txt", received_bits_tmp);
+                FILE *file = fopen("crc_tmp.txt", "w");
+                for (int i = 0; i < 320; ++i) {
+                    fprintf(file, "%d ", check_crc_bits[i]);
+                    if ((i + 1) % 32 == 0) {
+                        fprintf(file, "\n");
+                    }
+                }
+                fclose(file);
 
                 //exit(1);
 
@@ -194,8 +196,10 @@ public:
                         }
                     }  // a group of bytes is ready to calculate crc
                     std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, sizeof(bytes_for_calculation) * 8, CRC::CRC_32());
+                    printf("crc: %x\n", crc);
+                    //std::cout <<"crc: " << std::hex << crc << std::endl;
                     // Compare with received crc bits.
-                    for (int i = 7; i >= 0; --i) {
+                    for (int i = 31; i >= 0; --i) {
                         if ((crc >> i & 1) != (std::uint32_t)check_crc_bits[received_crc_read_count++]) {
                             crc_correct = false;
                             std::cout << "crc error1 at: " << (received_crc_read_count - 1) << std::endl;
@@ -213,7 +217,7 @@ public:
                     }
                 }
                 std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, 464, CRC::CRC_32());
-                for (int i = 7; i >= 0 && crc_correct; --i) {
+                for (int i = 31; i >= 0 && crc_correct; --i) {
                     if ((crc >> i & 1) != (std::uint32_t)check_crc_bits[received_crc_read_count++]) {
                         crc_correct = false;
                         std::cout << "crc error2 at: " << (received_crc_read_count - 1) << std::endl;
@@ -221,7 +225,10 @@ public:
                     }
                 }  // end of processing last 464 bits
 
-                crc_correct = true;
+/////////////////////////////  delete me ////////////////////
+                //crc_correct = true;
+//////////////////////////////////////////////////////////
+
                 if (crc_correct) {
                     for (auto &i : received_bits_tmp) {
                         received_bits.emplace_back(i);

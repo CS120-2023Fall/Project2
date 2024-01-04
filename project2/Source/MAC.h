@@ -9,8 +9,8 @@
 
 // millisecond
 #define ACK_TIME_OUT_THRESHOLD 1000
-#define RESEND_THRESHOLD 10
-double RTT = 40;
+#define RESEND_THRESHOLD 100
+double RTT = 80;
 
 class MAC_Layer {
 public:
@@ -215,7 +215,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             }
         }
         else {
-            backoff_exp = rand() % 3 + 6;
+            backoff_exp = rand() % 3 + 9;
             beforeTime_backoff = std::chrono::steady_clock::now();
             macState = MAC_States_Set::Idle;
             return;

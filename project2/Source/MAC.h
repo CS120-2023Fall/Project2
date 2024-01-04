@@ -11,6 +11,8 @@
 #define ACK_TIME_OUT_THRESHOLD 2000
 #define RESEND_THRESHOLD 100
 double RTT = 50;
+//bool write_out[50000] = {false};
+
 
 class MAC_Layer {
 public:
@@ -38,12 +40,27 @@ public:
         ackTimeOut_valid = false;
         wait = false;
         backoff_exp = 0;
+        write_out.clear();
         startTransmitting = START_TRANS_FIRST;
     }
     
     //void reset_receiving_info();
     void STOP() {
-        receiver.Write_symbols();       
+        receiver.Write_symbols();    
+        std::ofstream o("received_binary.bin", std::ios::binary | std::ios::out);
+        char byte = 0;
+        char t[6250];
+        int read_t = 0;
+        for (int i = 0; i < receiver.received_bits.size(); i++) {
+            byte = (byte << 1) + receiver.received_bits[i];
+            if ((i + 1) % 8 == 0) {
+              t[read_t++] = byte;
+              byte = 0;
+            }
+        }
+        o.write(t, 6250);
+        o.close();
+
     }
 
 public:
@@ -58,6 +75,7 @@ public:
         debug_error
     };
 
+    std::vector<bool> write_out;
     MAC_States_Set macState{MAC_States_Set::Idle};
     bool TxPending{ false };
     std::deque<int> received_data;    
@@ -215,7 +233,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             }
         }
         else {
-            backoff_exp = rand() % 3 + 6;
+            backoff_exp = rand() % 3 + 3;
             beforeTime_backoff = std::chrono::steady_clock::now();
             macState = MAC_States_Set::Idle;
             return;

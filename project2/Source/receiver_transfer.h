@@ -130,13 +130,13 @@ public:
                 }
                 // data
                 else if (Frame_Type(type) == Frame_Type::data) {
-                    if (packet_num < received_packet) {
+                    if ((unsigned)packet_num < received_packet) {
                         //decode_buffer.clear();
                         repeated_data_flag = true;
                         repeated_packet_num = packet_num;
                         std::cout << "repeated" << std::endl;
                     }
-                    else if (packet_num > received_packet) {
+                    else if ((unsigned)packet_num > received_packet) {
                         decode_buffer.clear();
                         return error;
                     }
@@ -183,7 +183,7 @@ public:
                     std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, sizeof(bytes_for_calculation) * 8, CRC::CRC_32());
                     // Compare with received crc bits.
                     for (int i = 7; i >= 0; --i) {
-                        if ((crc >> i & 1) != check_crc_bits[received_crc_read_count++]) {
+                        if ((crc >> i & 1) != (std::uint32_t)check_crc_bits[received_crc_read_count++]) {
                             crc_correct = false;
                             break;
                         }
@@ -200,7 +200,7 @@ public:
                 }
                 std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, 464, CRC::CRC_32());
                 for (int i = 7; i >= 0; --i) {
-                    if ((crc >> i & 1) != check_crc_bits[received_crc_read_count++]) {
+                    if ((crc >> i & 1) != (std::uint32_t)check_crc_bits[received_crc_read_count++]) {
                         crc_correct = false;
                         break;
                     }
@@ -428,7 +428,7 @@ public:
                     outBuffer[i] = 0;
                 }
                 else {
-                    outBuffer[i] = transmitting_buffer[transfer_num];
+                    outBuffer[i] = (float)transmitting_buffer[transfer_num];
                     transfer_num++;
                 }
             }

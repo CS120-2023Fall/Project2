@@ -43,8 +43,18 @@ public:
                 oneByte = 0;
             }
         }
-        //std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, 464, CRC::CRC_32());
-        //crc_32_t.emplace_back((int)crc);
+        std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, 464, CRC::CRC_32());
+        crc_32_t.emplace_back((int)crc);
+
+        FILE *file = fopen("crc.txt", "w");
+        for (int i = 0; i < crc_32_t.size(); ++i) {
+            fprintf(file, "%x, ", crc_32_t[i]);
+            if ((i + 1) % 10 == 0) {
+                fprintf(file, "\n");
+            }
+        }
+        fclose(file);
+
         generate_preamble();
     }
 

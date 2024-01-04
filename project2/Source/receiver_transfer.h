@@ -196,7 +196,7 @@ public:
                         }
                     }  // a group of bytes is ready to calculate crc
                     std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, sizeof(bytes_for_calculation) * 8, CRC::CRC_32());
-                    printf("crc: %x\n", crc);
+                    //printf("crc: %x\n", crc);
                     //std::cout <<"crc: " << std::hex << crc << std::endl;
                     // Compare with received crc bits.
                     for (int i = 31; i >= 0; --i) {

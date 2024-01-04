@@ -4,47 +4,50 @@
 #include <string>
 #include <deque>
 #include <iostream>
-#include "CRC.h"
 #include <cmath>
+#include <assert.h>
 #include <JuceHeader.h>
+#include "CRC.h"
 #include <iomanip>  // Includes ::std::hex
 #include <iostream> // Includes ::std::cout
 #include <cstdint>  // Includes ::std::uint32_t
 #include "utility.h"
-#include <assert.h>
+#include "macros.h"
 
 class Transmitter_with_wire {
 public:
     Transmitter_with_wire() = default;
     Transmitter_with_wire(const std::string &path, int _sample_rate) :sample_rate(_sample_rate) {
         bits = Read_bits_from_bin(path);//read the bits from a bin file
-        //every 504 bits (63 Bytes) have a crc calculation. 99 calculation in total.
-        for (int i = 0; i + 504 < (int)bits.size(); i += 504) {
+        //every 504 bits (63 Bytes) have a crc calculation. A packet has 10 calculation, the last
+        // calculation is not full 63 Bytes.
+        for (int packet = 0; packet < NUM_TOTAL_PACKETS; ++packet) {
             char oneByte = 0;
-            // One turn of crc calculation.
-            // Pack bits to 63 bytes.
-            for (int j = 0; j < 504; ++j) {
-                oneByte = (oneByte << 1) + (char)bits[i + j];
-                if ((j + 1) % 8 == 0) {
-                    bytes_for_crc_calculation[j / 8] = oneByte;
+            // first 9 calculation, 504 * 9 bits
+            for (int one_calculation_start = 0; one_calculation_start + 504 < NUM_PACKET_DATA_BITS; 
+                one_calculation_start += 504) {
+                for (int j = 0; j < 504; ++j) {
+                    oneByte = (oneByte << 1) + (char)bits[j + one_calculation_start + packet * NUM_PACKET_DATA_BITS];
+                    if ((j + 1) % 8 == 0) {
+                        bytes_for_crc_calculation[j / 8] = oneByte;
+                        oneByte = 0;
+                    }
+                }
+                std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, sizeof(bytes_for_crc_calculation) * 8, CRC::CRC_32());
+                crc_32_t.emplace_back((int)crc);
+            } // end of first 9 calculation
+            // The last 464 bits at the end of a packet
+            oneByte = 0;
+            for (int i = 504 * 9; i < NUM_PACKET_DATA_BITS; ++i) {
+                oneByte = (oneByte << 1) + (char)bits[i + packet * NUM_PACKET_DATA_BITS];
+                if ((i + 1) % 8 == 0) {
+                    bytes_for_crc_calculation[(i - 504 * 9) / 8] = oneByte;
                     oneByte = 0;
                 }
             }
-            assert(sizeof(bytes_for_crc_calculation) == 63);
-            std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, sizeof(bytes_for_crc_calculation) * 8, CRC::CRC_32());
+            std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, 464, CRC::CRC_32());
             crc_32_t.emplace_back((int)crc);
-        } // end of iteration on 504* 99 bits
-        // The last 104 bits (13 Bytes)
-        for (int i = 504 * 99; i < (int)bits.size(); ++i) {
-            char oneByte = 0;
-            oneByte = (oneByte << 1) + (char)bits[i];
-            if ((i + 1) % 8 == 0) {
-                bytes_for_crc_calculation[(i - 504 * 99) / 8] = oneByte;
-                oneByte = 0;
-            }
-        }
-        std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, 464, CRC::CRC_32());
-        crc_32_t.emplace_back((int)crc);
+        } // end of all crc calculation
 
         FILE *file = fopen("crc.txt", "w");
         for (int i = 0; i < crc_32_t.size(); ++i) {

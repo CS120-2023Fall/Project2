@@ -245,7 +245,7 @@ public:
             else if (juceState == juce_States_Set::TEST) {
                 double pi = juce::MathConstants<double>::pi;
                 for (int i = 0; i < num_samples; ++i) {
-                    outBuffer[i] = std::sin(2 * pi * 100 * i/48000);
+                    outBuffer[i] = (float)std::sin(2 * pi * 100 * i/48000);
                 }
                 return;
             }

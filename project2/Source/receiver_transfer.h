@@ -9,14 +9,6 @@
 ///  set the macros appropriately!!!
 #define QUIET_THRESHOLD 1.0
 
-//constexpr const int maximum_packet = 50000 / PACKET_DATA_SIZE / BITS_PER_SYMBOL;
-//constexpr const int CRC_SYMBOLS = NUM_CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc
-//std::vector<double > empty=std::vector<double>(0);
-//std::deque<double> empty_deque=std::deque<double>(0,0.0);
-//constexpr const int samples_per_symbol = samples_per_bit;
-//constexpr const int MAC_PACKET_SAMPLES = PREAMBLE_SIZE + (OVERHEAD_SYMBOLS + PACKET_DATA_SIZE) * samples_per_symbol;//how many samples in a mac packet
-//constexpr const int PHY_PACKET_SAMPLES = PREAMBLE_SIZE + (CRC_SYMBOLS+ PACKET_DATA_SIZE ) * samples_per_symbol;//how many samples in a phy packet
-
 enum class  Frame_Type {
     ack = 0b01,
     data = 0b10
@@ -150,15 +142,6 @@ public:
                     }
                     header_processed = true;
                     
-                    //// start_position: bit index, remember x4
-                    //int start_position = NUM_MAC_HEADER_BITS;
-                    //for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
-                    //    symbol_code.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
-                    //}
-                    //std::cout << "exit after receiving data" << std::endl;
-                    //Write("decode_log.txt", decode_buffer);
-                    //decode_buffer.clear();
-                    //return valid_data;
                 }
             }
             // decode data and crc
@@ -403,7 +386,7 @@ public:
                 // add crc
                 for (int i = 0; i < 10; ++i) {
                     unsigned crc_t = default_trans_wire.crc_32_t[transmitted_packet * 10 + i];
-                    for (int j = 0; j < 32; ++j) {
+                    for (int j = 31; j >= 0; --j) {
                         add_samples_from_a_bit(transmitting_buffer, (int)(crc_t >> j & 1));
                     }
                 }

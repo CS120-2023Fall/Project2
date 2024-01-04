@@ -28,8 +28,8 @@
 #define RECORD_IN_LIVE false
 // We do not have to start the two computers simultaneously. The macro decides whether this
 // computer start transmitting first.
-#define START_TRANS_FIRST false
-#define CSMA_ONLY_RECEIVE true
+#define START_TRANS_FIRST true
+#define CSMA_ONLY_RECEIVE false
 
 #define IS_ROUTER true
 #define MY_IP 0x111

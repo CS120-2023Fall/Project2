@@ -1,7 +1,8 @@
 import os
 import struct
-
-inputFileName = "./received_tmp.txt"
+# received_tmp
+# project2_bits_receiver
+inputFileName = "./project2_bits_receiver.txt"
 fOurOutput = open(inputFileName, mode = "r", encoding="utf-8")
 fGroundTruth = open("./INPUT_bin.txt", mode = "r", encoding="utf-8")
 # diff result
@@ -9,7 +10,7 @@ fOut = open("./diff2.txt", mode = "w", encoding="utf-8")
 
 groundTruth = fGroundTruth.readlines()[0]
 our = fOurOutput.readlines()[0]
-print(type(groundTruth))
+
 print(len(groundTruth))
 print(len(our))
 cntCorrect = 0

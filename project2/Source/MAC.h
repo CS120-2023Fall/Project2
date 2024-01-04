@@ -11,7 +11,7 @@
 #define ACK_TIME_OUT_THRESHOLD 1000
 #define RESEND_THRESHOLD 100
 double RTT = 150;
-bool *write_out = new bool[50000];
+bool write_out[50000] = { false };
 
 class MAC_Layer {
 public:
@@ -26,7 +26,6 @@ public:
     };
 
     ~MAC_Layer() {
-        delete[] write_out;
     }
     // update MAC states
     void refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples);
@@ -46,10 +45,12 @@ public:
     //void reset_receiving_info();
     void STOP() {
         receiver.Write_symbols();
-        for (int i = 0; i < receiver.received_bits.size(); ++i) {
-            write_out[i] = receiver.received_bits[i];
+        std::vector<bool> t;
+        std::cout << transmitter.bits.size() << std::endl;
+        for (int i = 0; i < transmitter.bits.size(); ++i) {
+            t.push_back(static_cast<bool> (transmitter.bits[i]) );
         }
-        Write_bin(write_out, "received_binary.bin");
+        Write_bin(t, "received_binary.bin");
     }
 
 public:

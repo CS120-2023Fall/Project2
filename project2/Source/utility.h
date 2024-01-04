@@ -68,8 +68,11 @@ inline void Tranlate_from_A_bin_To_B_Bin(const std::string& path, const std::str
 		o << (char)c;
 	}
 }
-inline void Write_bin(std::vector<bool>bits,const std::string& path) {
+inline void Write_bin(std::vector<bool> &bits,const std::string& path) {
 	std::ofstream o(path.c_str(), std::ios::binary| std::ios::out);
+	//for (int i = 0; i < 50000; i += 8) {
+	//	o.write((const char *)&(bits[i]), 1);
+	//}
 	o.write((const char*)&(bits[0]), bits.size()/8);
 	o.close();
 }

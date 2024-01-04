@@ -165,7 +165,7 @@ public:
                     check_crc_bits[i] = decode_a_bit(decode_buffer, bit_index * 4);
                 }
                 // calculate and check crc
-                bool crc_correct = true;                
+                bool crc_correct = true;
                 //int received_tmp_read_count = 0;  // count for bits
                 char bytes_for_calculation[63] = { 0 };  // for 500 bits
                 int received_crc_read_count = 0;  // a reader for check_crc_bits[], the received crc part.
@@ -185,13 +185,14 @@ public:
                     for (int i = 7; i >= 0; --i) {
                         if ((crc >> i & 1) != check_crc_bits[received_crc_read_count++]) {
                             crc_correct = false;
+                            std::cout << "crc error1 at: " << (received_crc_read_count - 1) << std::endl;
                             break;
                         }
                     }
                 } // end of first 504 * 9 bits
                 // calculate the last 464 bits
                 tmp_byte = 0;
-                for (int i = 504 * 9; i < 5000; ++i) {
+                for (int i = 504 * 9; i < 5000 && crc_correct; ++i) {
                     tmp_byte = (tmp_byte << 1) + (char)received_bits_tmp[i];
                     if ((i + 1) % 8 == 0) {
                         bytes_for_calculation[(i - 504 * 9) / 8] = tmp_byte;
@@ -199,13 +200,15 @@ public:
                     }
                 }
                 std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, 464, CRC::CRC_32());
-                for (int i = 7; i >= 0; --i) {
+                for (int i = 7; i >= 0 && crc_correct; --i) {
                     if ((crc >> i & 1) != check_crc_bits[received_crc_read_count++]) {
                         crc_correct = false;
+                        std::cout << "crc error2 at: " << (received_crc_read_count - 1) << std::endl;
                         break;
                     }
                 }  // end of processing last 464 bits
 
+                //crc_correct = true;
                 if (crc_correct) {
                     for (auto &i : received_bits_tmp) {
                         received_bits.emplace_back(i);

@@ -200,7 +200,7 @@ public:
                     }
                 }
                 std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, 464, CRC::CRC_32());
-                for (int i = 7; i >= 0; --i) {
+                for (int i = 7; i >= 0 && crc_correct; --i) {
                     if ((crc >> i & 1) != (std::uint32_t)check_crc_bits[received_crc_read_count++]) {
                         crc_correct = false;
                         std::cout << "crc error2 at: " << (received_crc_read_count - 1) << std::endl;

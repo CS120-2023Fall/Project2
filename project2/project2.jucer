@@ -8,18 +8,13 @@
       <FILE id="jyJPzS" name="macros.h" compile="0" resource="0" file="Source/macros.h"/>
       <FILE id="PhNmHh" name="CRC.h" compile="0" resource="0" file="Source/CRC.h"/>
       <FILE id="CWK2rq" name="fft.h" compile="0" resource="0" file="Source/fft.h"/>
-      <FILE id="C9o21f" name="filter.h" compile="0" resource="0" file="Source/filter.h"/>
       <FILE id="kOKPlH" name="MAC.h" compile="0" resource="0" file="Source/MAC.h"/>
-      <FILE id="cU3Ju4" name="modulate_and_demoudulate.h" compile="0" resource="0"
-            file="Source/modulate_and_demoudulate.h"/>
       <FILE id="pUMmqR" name="receiver_transfer.h" compile="0" resource="0"
             file="Source/receiver_transfer.h"/>
       <FILE id="V8bohQ" name="transmitter.h" compile="0" resource="0" file="Source/transmitter.h"/>
       <FILE id="Pn20hX" name="utility.h" compile="0" resource="0" file="Source/utility.h"/>
       <FILE id="iUGYkf" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
       <FILE id="lBGOMJ" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
-      <FILE id="J9ZsiH" name="MainComponent.cpp" compile="1" resource="0"
-            file="Source/MainComponent.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

@@ -80,7 +80,7 @@ public:
     std::vector<int> crc_32_t;
     char bytes_for_crc_calculation[63]{ 0 };
 };
-Transmitter_with_wire default_trans_wire("INPUT.bin", 48000);
+Transmitter_with_wire default_trans_wire("INPUT4to3.bin", 48000);
 
 //Transmitter default_trans("INPUT.txt", default_sample_rate);
 

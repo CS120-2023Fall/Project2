@@ -8,9 +8,9 @@
 #include "macros.h"
 
 // millisecond
-#define ACK_TIME_OUT_THRESHOLD 1000
-#define RESEND_THRESHOLD 10
-double RTT = 40;
+#define ACK_TIME_OUT_THRESHOLD 2000
+#define RESEND_THRESHOLD 100
+double RTT = 50;
 
 class MAC_Layer {
 public:

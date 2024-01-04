@@ -73,6 +73,12 @@ inline void Write_bin(std::vector<bool>bits,const std::string& path) {
 	o.write((const char*)&(bits[0]), bits.size()/8);
 	o.close();
 }
+
+void Write_bin(bool bits[], const std::string &path) {
+	std::ofstream o(path, std::ios::binary);
+	o.write(reinterpret_cast<char *>(bits), 50000 / 8);
+	o.close();
+}
 //inline std::vector<bool> from_symbols_to_bits(const std::vector<unsigned int >symbols, int seperation_num) {
 //	std::vector<bool>bits;
 //	int size = symbols.size();

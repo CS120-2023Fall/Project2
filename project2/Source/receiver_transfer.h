@@ -160,35 +160,51 @@ public:
                     //received_bits.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
                 }
                 // decode crc
-                for (int bit_index = start_position + NUM_PACKET_DATA_BITS, i = 0; bit_index < NUM_CRC_BITS_PER_PACKET; ++bit_index, ++i) {
+                for (int bit_index = start_position + NUM_PACKET_DATA_BITS, i = 0; 
+                    bit_index < start_position + NUM_PACKET_DATA_BITS + NUM_CRC_BITS_PER_PACKET; ++bit_index, ++i) {
                     check_crc_bits[i] = decode_a_bit(decode_buffer, bit_index * 4);
                 }
                 // calculate and check crc
                 bool crc_correct = true;                
-                int received_tmp_read_count = 0;  // count for bits
+                //int received_tmp_read_count = 0;  // count for bits
                 char bytes_for_calculation[63] = { 0 };  // for 500 bits
-                int check_crc_read_count = 0;  // a reader for check_crc_bits[]
-                for (int read_tmp_bits = 0; read_tmp_bits < NUM_PACKET_DATA_BITS && crc_correct; read_tmp_bits += 500) {
-                    char tmp_byte = 0;
-                    for (int i = 0; i < 496; ++i) {
-                        tmp_byte = (tmp_byte << 1) + (char)received_bits_tmp[i + read_tmp_bits];
+                int received_crc_read_count = 0;  // a reader for check_crc_bits[], the received crc part.
+                // check first 504* 9 = 4536 bits
+                char tmp_byte = 0;
+                for (int tmp_bits_group_start = 0; tmp_bits_group_start + 504 < NUM_PACKET_DATA_BITS && crc_correct; 
+                    tmp_bits_group_start += 504) {
+                    for (int i = 0; i < 504; ++i) {
+                        tmp_byte = (tmp_byte << 1) + (char)received_bits_tmp[i + tmp_bits_group_start];
                         if ((i + 1) % 8 == 0) {
                             bytes_for_calculation[i / 8] = tmp_byte;
                             tmp_byte = 0;
                         }
-                    }
-                    for (int i = 496; i < 500; ++i) {
-                        tmp_byte = (tmp_byte << 1) + received_bits_tmp[i + read_tmp_bits];
-                    }
-                    bytes_for_calculation[62] = tmp_byte;
-                    std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, sizeof(bytes_for_calculation) - 4, CRC::CRC_32());
+                    }  // a group of bytes is ready to calculate crc
+                    std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, sizeof(bytes_for_calculation) * 8, CRC::CRC_32());
+                    // Compare with received crc bits.
                     for (int i = 7; i >= 0; --i) {
-                        if ((crc >> i & 1) != check_crc_bits[check_crc_read_count++]) {
+                        if ((crc >> i & 1) != check_crc_bits[received_crc_read_count++]) {
                             crc_correct = false;
                             break;
                         }
                     }
+                } // end of first 504 * 9 bits
+                // calculate the last 464 bits
+                tmp_byte = 0;
+                for (int i = 504 * 9; i < 5000; ++i) {
+                    tmp_byte = (tmp_byte << 1) + (char)received_bits_tmp[i];
+                    if ((i + 1) % 8 == 0) {
+                        bytes_for_calculation[(i - 504 * 9) / 8] = tmp_byte;
+                        tmp_byte = 0;
+                    }
                 }
+                std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, 464, CRC::CRC_32());
+                for (int i = 7; i >= 0; --i) {
+                    if ((crc >> i & 1) != check_crc_bits[received_crc_read_count++]) {
+                        crc_correct = false;
+                        break;
+                    }
+                }  // end of processing last 464 bits
 
                 if (crc_correct) {
                     for (auto &i : received_bits_tmp) {
@@ -206,7 +222,7 @@ public:
                 std::cout << "exit after receiving data" << std::endl;
                 //Write("decode_log.txt", decode_buffer);
                 return valid_data;
-            }
+            }  // end of processing data/ack
         }
         return still_receiving;
 

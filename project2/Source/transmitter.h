@@ -18,7 +18,7 @@ public:
     Transmitter_with_wire() = default;
     Transmitter_with_wire(const std::string &path, int _sample_rate) :sample_rate(_sample_rate) {
         bits = Read_bits_from_bin(path);//read the bits from a bin file
-        // every 504 bits (63 Bytes) have a crc calculation. 10 calculation in total.
+         //every 504 bits (63 Bytes) have a crc calculation. 99 calculation in total.
         for (int i = 0; i + 504 < (int)bits.size(); i += 504) {
             char oneByte = 0;
             // One turn of crc calculation.
@@ -33,18 +33,18 @@ public:
             assert(sizeof(bytes_for_crc_calculation) == 63);
             std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, sizeof(bytes_for_crc_calculation) * 8, CRC::CRC_32());
             crc_32_t.emplace_back((int)crc);
-        } // end of iteration on 504* 9 bits
-        // The last 464 bits
-        for (int i = 504 * 9; i < (int)bits.size(); ++i) {
+        } // end of iteration on 504* 99 bits
+        // The last 104 bits (13 Bytes)
+        for (int i = 504 * 99; i < (int)bits.size(); ++i) {
             char oneByte = 0;
             oneByte = (oneByte << 1) + (char)bits[i];
             if ((i + 1) % 8 == 0) {
-                bytes_for_crc_calculation[(i - 504 * 9) / 8] = oneByte;
+                bytes_for_crc_calculation[(i - 504 * 99) / 8] = oneByte;
                 oneByte = 0;
             }
         }
-        std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, 464, CRC::CRC_32());
-        crc_32_t.emplace_back((int)crc);
+        //std::uint32_t crc = CRC::CalculateBits(bytes_for_crc_calculation, 464, CRC::CRC_32());
+        //crc_32_t.emplace_back((int)crc);
         generate_preamble();
     }
 

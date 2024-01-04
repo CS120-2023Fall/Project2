@@ -4,7 +4,7 @@ import struct
 # project2_bits_receiver
 inputFileName = "./project2_bits_receiver.txt"
 fOurOutput = open(inputFileName, mode = "r", encoding="utf-8")
-fGroundTruth = open("./INPUT_bin.txt", mode = "r", encoding="utf-8")
+fGroundTruth = open("./INPUT4to3_bin.txt", mode = "r", encoding="utf-8")
 # diff result
 fOut = open("./diff2.txt", mode = "w", encoding="utf-8")
 

@@ -58,6 +58,8 @@ public:
         }
         fclose(file);
 
+        Write("INPUT3to4.txt", bits);
+
         generate_preamble();
     }
 

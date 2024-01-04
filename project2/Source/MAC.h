@@ -9,12 +9,13 @@
 
 // millisecond
 #define ACK_TIME_OUT_THRESHOLD 1000
-#define RESEND_THRESHOLD 50
-double RTT = 65;
+#define RESEND_THRESHOLD 100
+double RTT = 85;
+
 
 class MAC_Layer {
 public:
-    MAC_Layer() = default;
+    MAC_Layer(){};
     MAC_Layer(juce::Label *labels[], int num_labels) {
         if (num_labels > 5) {
             assert(0);
@@ -39,11 +40,32 @@ public:
         wait = false;
         backoff_exp = 0;
         startTransmitting = START_TRANS_FIRST;
+        write_out.clear();
     }
     
     //void reset_receiving_info();
     void STOP() {
-        receiver.Write_symbols();       
+        receiver.Write_symbols();
+
+        //Tranlate_from_A_bin_To_B_Bin("INPUT3to4.bin", "o.bin");
+        char t[50000 / 8];
+        int read_t = 0;
+        std::ofstream o("received_binary.bin", std::ios::binary | std::ios::out);
+        char byte = 0;
+        for (int i = 0; i < receiver.received_bits.size(); ++i) {
+            // receiver.received_bits
+            byte = (byte << 1) + receiver.received_bits[i];
+            //std::cout << (int)byte << std::endl;
+            if ((i + 1) % 8 == 0) {
+                ////std::cout << 1 << std::endl;
+                //std::cout << (unsigned)byte << std::endl;
+                //return;
+                t[read_t++] = byte;
+                byte = 0;
+            }
+        }
+        o.write(t, 6250);
+        o.close();
     }
 
 public:
@@ -58,6 +80,7 @@ public:
         debug_error
     };
 
+    std::vector<bool> write_out;
     MAC_States_Set macState{MAC_States_Set::Idle};
     bool TxPending{ false };
     std::deque<int> received_data;    
@@ -105,6 +128,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     //}
     /// Idle
     if (macState == MAC_States_Set::Idle) {
+        if (transmitter.transmitted_packet == 9) {
+            RTT = 800;
+        }
         //std::cout << "idle" << std::endl;
         do {
             /// Detect preamble, invoke detect_frame()

@@ -43,7 +43,12 @@ public:
     
     //void reset_receiving_info();
     void STOP() {
-        receiver.Write_symbols();       
+        receiver.Write_symbols();
+        std::vector<bool> tmp(50000, false);
+        for (int i = 0; i < (int)receiver.received_bits.size(); ++i) {
+            tmp[i] = (bool)receiver.received_bits[i];
+        }
+        Write_bin(tmp, "reveived_binary.bin");
     }
 
 public:

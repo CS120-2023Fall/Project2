@@ -10,7 +10,7 @@
 // millisecond
 #define ACK_TIME_OUT_THRESHOLD 1000
 #define RESEND_THRESHOLD 100
-double RTT = 80;
+double RTT = 110;
 
 class MAC_Layer {
 public:

@@ -40,17 +40,28 @@ public:
         wait = false;
         backoff_exp = 0;
         startTransmitting = START_TRANS_FIRST;
+        start_time = std::chrono::steady_clock::now();
     }
     
     //void reset_receiving_info();
     void STOP() {
         receiver.Write_symbols();
-        std::vector<bool> t;
-        std::cout << transmitter.bits.size() << std::endl;
-        for (int i = 0; i < transmitter.bits.size(); ++i) {
-            t.push_back(static_cast<bool> (transmitter.bits[i]) );
+
+        char t[50000 / 8];
+        int read_t = 0;
+        std::ofstream o("received_binary.bin", std::ios::binary | std::ios::out);
+        char byte = 0;
+        for (int i = 0; i < receiver.received_bits.size(); ++i) {
+            // receiver.received_bits
+            byte = (byte << 1) + receiver.received_bits[i];
+            if ((i + 1) % 8 == 0) {
+
+                t[read_t++] = byte;
+                byte = 0;
+            }
         }
-        Write_bin(t, "received_binary.bin");
+        o.write(t, 6250);
+        o.close();
     }
 
 public:
@@ -65,6 +76,7 @@ public:
         debug_error
     };
 
+    std::chrono::time_point<std::chrono::steady_clock> start_time;
     MAC_States_Set macState{MAC_States_Set::Idle};
     bool TxPending{ false };
     std::deque<int> received_data;    
@@ -93,23 +105,17 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
     }
 }
 
-//bool MAC_Layer::test_crc() {
-//    std::vector<int> check_crc(63 * 100, 0);
-//    char calculate_bits[500] = { 0 };
-//    char tmp = 0;
-//    for (int i = 0; i < 50000; ++i) {
-//        for (int j = 0; j < 496; ++j) {
-//            tmp = (tmp << 1) + default_trans_wire.
-//        }
-//    }
-//}
 
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
-    //if (TEST_CRC) {
-    //    if (test_crc()) {
-    //        return;
-    //    }
-    //}
+    if (receiver.received_packet >= 10 && transmitter.transmitted_packet >= 10) {
+        auto currentTime = std::chrono::steady_clock::now();
+        double duration = std::chrono::duration<double, std::milli>(currentTime - start_time).count();
+        if (duration > STOP_THREASHOLD) {
+            macState = MAC_States_Set::LinkError;
+            return;
+        }
+    }
+
     /// Idle
     if (macState == MAC_States_Set::Idle) {
         //std::cout << "idle" << std::endl;

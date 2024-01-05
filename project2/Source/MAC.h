@@ -108,7 +108,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     if (receiver.received_packet >= 10 && transmitter.transmitted_packet >= 10) {
         auto currentTime = std::chrono::steady_clock::now();
         double duration = std::chrono::duration<double, std::milli>(currentTime - start_time).count();
-        if (duration > STOP_THREASHOLE) {
+        if (duration > STOP_THREASHOLD) {
             macState = MAC_States_Set::LinkError;
             return;
         }

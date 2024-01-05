@@ -120,9 +120,6 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
 
     /// Idle
     if (macState == MAC_States_Set::Idle) {
-        if (transmitter.transmitted_packet == 9) {
-            RTT = 800;
-        }
         //std::cout << "idle" << std::endl;
         do {
             /// Detect preamble, invoke detect_frame()
@@ -152,7 +149,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             }
 
             ///  Send data
-            if (TxPending) {
+            if (TxPending && receiver.received_packet >= transmitter.transmitted_packet) {
                 double duration_millisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
                 // +, - are prior to <<
                 double backoff = (1 << backoff_exp) - 1;

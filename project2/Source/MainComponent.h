@@ -60,33 +60,33 @@ class MainContentComponent;
 #define PI juce::MathConstants<double>::pi
 
 std::vector<float> in_data;
-
-namespace my_log {
-#include <iostream>
-#include <Windows.h>
-
-    class PrintDebugConsole {
-    public:
-        PrintDebugConsole() {
-            AllocConsole();
-            SetConsoleTitle(TEXT("Juce Debug Window"));
-            freopen("conin$", "r", stdin);
-            freopen("conout$", "w", stdout);
-            freopen("conout$", "w", stderr);
-
-            std::cout << "Welcome..." << std::endl;
-        }
-
-        ~PrintDebugConsole() {
-            fclose(stdin);
-            fclose(stdout);
-            fclose(stderr);
-            FreeConsole();
-        }
-    };
-
-    static const PrintDebugConsole staticPrintConsole = PrintDebugConsole();
-}
+//
+//namespace my_log {
+//#include <iostream>
+//#include <Windows.h>
+//
+//    class PrintDebugConsole {
+//    public:
+//        PrintDebugConsole() {
+//            AllocConsole();
+//            SetConsoleTitle(TEXT("Juce Debug Window"));
+//            freopen("conin$", "r", stdin);
+//            freopen("conout$", "w", stdout);
+//            freopen("conout$", "w", stderr);
+//
+//            std::cout << "Welcome..." << std::endl;
+//        }
+//
+//        ~PrintDebugConsole() {
+//            fclose(stdin);
+//            fclose(stdout);
+//            fclose(stderr);
+//            FreeConsole();
+//        }
+//    };
+//
+//    static const PrintDebugConsole staticPrintConsole = PrintDebugConsole();
+//}
 /*
 This project refers to the JUCE official examples. (www.JUCE.com)
 
@@ -142,13 +142,6 @@ public:
         addAndMakeVisible(T_and_R_Button);
 
 
-        // transmit and receive button
-        //csmaWithJamButton.setButtonText("csma_task");
-        //csmaWithJamButton.setSize(110, 40);
-        //csmaWithJamButton.setCentrePosition(330, 200);
-        //csmaWithJamButton.onClick = [this] {start_csma = true; juceState = juce_States_Set::T_AND_R ; mac.Start();
-        //mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
-        //addAndMakeVisible(csmaWithJamButton);
 
         recordButton.setButtonText("reflect the sound");
         recordButton.setSize(130, 40);
@@ -161,7 +154,7 @@ public:
 
 
         if (!CORNER_LOG) {
-            mes0.setCentrePosition(800, 40);
+            //mes0.setCentrePosition(800, 40);
             mes1.setCentrePosition(800, 40);
             mes2.setCentrePosition(800, 40);
             mes3.setCentrePosition(800, 40);

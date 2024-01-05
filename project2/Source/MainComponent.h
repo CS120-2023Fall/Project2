@@ -161,7 +161,7 @@ public:
 
 
         if (!CORNER_LOG) {
-            mes0.setCentrePosition(800, 40);
+            //mes0.setCentrePosition(800, 40);
             mes1.setCentrePosition(800, 40);
             mes2.setCentrePosition(800, 40);
             mes3.setCentrePosition(800, 40);

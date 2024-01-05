@@ -10,7 +10,7 @@
 // millisecond
 #define ACK_TIME_OUT_THRESHOLD 1000
 #define RESEND_THRESHOLD 100
-double RTT = 150;
+double RTT = 90;
 bool write_out[50000] = { false };
 
 class MAC_Layer {

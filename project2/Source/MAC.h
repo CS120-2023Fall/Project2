@@ -42,6 +42,7 @@ public:
         backoff_exp = 0;
         write_out.clear();
         startTransmitting = START_TRANS_FIRST;
+        start_time = std::chrono::steady_clock::now();
     }
     
     //void reset_receiving_info();
@@ -75,6 +76,7 @@ public:
         debug_error
     };
 
+    std::chrono::time_point<std::chrono::steady_clock> start_time;
     std::vector<bool> write_out;
     MAC_States_Set macState{MAC_States_Set::Idle};
     bool TxPending{ false };
@@ -104,23 +106,17 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
     }
 }
 
-//bool MAC_Layer::test_crc() {
-//    std::vector<int> check_crc(63 * 100, 0);
-//    char calculate_bits[500] = { 0 };
-//    char tmp = 0;
-//    for (int i = 0; i < 50000; ++i) {
-//        for (int j = 0; j < 496; ++j) {
-//            tmp = (tmp << 1) + default_trans_wire.
-//        }
-//    }
-//}
 
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
-    //if (TEST_CRC) {
-    //    if (test_crc()) {
-    //        return;
-    //    }
-    //}
+    if (receiver.received_packet >= 10 && transmitter.transmitted_packet >= 10) {
+        auto currentTime = std::chrono::steady_clock::now();
+        double duration = std::chrono::duration<double, std::milli>(currentTime - start_time).count();
+        if (duration > STOP_THREASHOLD) {
+            macState = MAC_States_Set::LinkError;
+            return;
+        }
+    }
+
     /// Idle
     if (macState == MAC_States_Set::Idle) {
         //std::cout << "idle" << std::endl;

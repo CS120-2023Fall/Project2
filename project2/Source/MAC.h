@@ -179,7 +179,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 macState = MAC_States_Set::Idle;
                 mes[2]->setText("transmitted packet: " + std::to_string(transmitter.transmitted_packet), 
                     juce::NotificationType::dontSendNotification);
-                backoff_exp = rand() % 3 + 5;
+                backoff_exp = rand() % 3 + 3;
                 resend = 0;
                 return;
             case Rx_Frame_Received_Type::valid_data: {
@@ -257,7 +257,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             ++resend;
             // set backoff after ack timeout
             // [3, 8]
-            backoff_exp = rand() % 5 + 3;
+            backoff_exp = rand() % 3 + 3;
             beforeTime_backoff = std::chrono::steady_clock::now();
             macState = MAC_States_Set::Idle;
             wait = false;

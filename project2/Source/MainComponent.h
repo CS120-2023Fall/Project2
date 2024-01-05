@@ -61,32 +61,32 @@ class MainContentComponent;
 
 std::vector<float> in_data;
 
-namespace my_log {
-#include <iostream>
-#include <Windows.h>
-
-    class PrintDebugConsole {
-    public:
-        PrintDebugConsole() {
-            AllocConsole();
-            SetConsoleTitle(TEXT("Juce Debug Window"));
-            freopen("conin$", "r", stdin);
-            freopen("conout$", "w", stdout);
-            freopen("conout$", "w", stderr);
-
-            std::cout << "Welcome..." << std::endl;
-        }
-
-        ~PrintDebugConsole() {
-            fclose(stdin);
-            fclose(stdout);
-            fclose(stderr);
-            FreeConsole();
-        }
-    };
-
-    static const PrintDebugConsole staticPrintConsole = PrintDebugConsole();
-}
+//namespace my_log {
+//#include <iostream>
+//#include <Windows.h>
+//
+//    class PrintDebugConsole {
+//    public:
+//        PrintDebugConsole() {
+//            AllocConsole();
+//            SetConsoleTitle(TEXT("Juce Debug Window"));
+//            freopen("conin$", "r", stdin);
+//            freopen("conout$", "w", stdout);
+//            freopen("conout$", "w", stderr);
+//
+//            std::cout << "Welcome..." << std::endl;
+//        }
+//
+//        ~PrintDebugConsole() {
+//            fclose(stdin);
+//            fclose(stdout);
+//            fclose(stderr);
+//            FreeConsole();
+//        }
+//    };
+//
+//    static const PrintDebugConsole staticPrintConsole = PrintDebugConsole();
+//}
 /*
 This project refers to the JUCE official examples. (www.JUCE.com)
 
@@ -160,7 +160,7 @@ public:
         addAndMakeVisible(recordButton);
 
         if (!CORNER_LOG) {
-            mes0.setCentrePosition(800, 40);
+            //mes0.setCentrePosition(800, 40);
             mes1.setCentrePosition(800, 40);
             mes2.setCentrePosition(800, 40);
             mes3.setCentrePosition(800, 40);

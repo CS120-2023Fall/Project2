@@ -37,4 +37,6 @@
 #define PING_MODE true
 
 #define TEST_CRC false
+#define CORNER_LOG true
+#define STOP_THREASHOLE 100000
 

@@ -44,7 +44,7 @@ inline std::vector<bool> Read_bits_from_bin(const std::string& path) {
 	char c;
 	while (f.get(c)) {
 		for (int j = 7; j >= 0; j--) {
-			bool bit = static_cast<bool>(c >> j) & 1;
+			bool bit = static_cast<bool> ((c >> j) & 1);
 			bits.push_back(bit);
 			o << (int)bit;
 		}

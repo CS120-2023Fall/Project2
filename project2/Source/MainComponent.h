@@ -159,6 +159,14 @@ public:
         };
         addAndMakeVisible(recordButton);
 
+        if (!CORNER_LOG) {
+            mes0.setCentrePosition(800, 40);
+            mes1.setCentrePosition(800, 40);
+            mes2.setCentrePosition(800, 40);
+            mes3.setCentrePosition(800, 40);
+        }
+
+
         // message
         mes0.setText("project2", juce::NotificationType::dontSendNotification);
         mes0.setSize(400, 40);
@@ -233,9 +241,6 @@ public:
                 }
                 mac.refresh_MAC(inBuffer, outBuffer, num_samples);
 
-                if (TEST_CRC) {
-                    stopButton.triggerClick();
-                }
             }
             else if (juceState == juce_States_Set::STOP) {
                 for (int i = 0; i < num_samples; i++) {

@@ -46,47 +46,47 @@
 
 *******************************************************************************/
 
-#include<array>
-#include<omp.h>
-#include<deque>
-#define _USE_MATH_DEFINES
-#include<cmath>
-
-
+//#include<array>
+//#include<omp.h>
+//#include<deque>
+//#define _USE_MATH_DEFINES
+//#include<cmath>
+//
+//
 #pragma once
 class MainContentComponent;
 #include "MAC.h"
 #include <JuceHeader.h>
 #define PI juce::MathConstants<double>::pi
-
+//
 std::vector<float> in_data;
-
-namespace my_log {
-#include <iostream>
-#include <Windows.h>
-
-    class PrintDebugConsole {
-    public:
-        PrintDebugConsole() {
-            AllocConsole();
-            SetConsoleTitle(TEXT("Juce Debug Window"));
-            freopen("conin$", "r", stdin);
-            freopen("conout$", "w", stdout);
-            freopen("conout$", "w", stderr);
-
-            std::cout << "Welcome..." << std::endl;
-        }
-
-        ~PrintDebugConsole() {
-            fclose(stdin);
-            fclose(stdout);
-            fclose(stderr);
-            FreeConsole();
-        }
-    };
-
-    static const PrintDebugConsole staticPrintConsole = PrintDebugConsole();
-}
+//
+//namespace my_log {
+//#include <iostream>
+//#include <Windows.h>
+//
+//    class PrintDebugConsole {
+//    public:
+//        PrintDebugConsole() {
+//            AllocConsole();
+//            SetConsoleTitle(TEXT("Juce Debug Window"));
+//            freopen("conin$", "r", stdin);
+//            freopen("conout$", "w", stdout);
+//            freopen("conout$", "w", stderr);
+//
+//            std::cout << "Welcome..." << std::endl;
+//        }
+//
+//        ~PrintDebugConsole() {
+//            fclose(stdin);
+//            fclose(stdout);
+//            fclose(stderr);
+//            FreeConsole();
+//        }
+//    };
+//
+//    static const PrintDebugConsole staticPrintConsole = PrintDebugConsole();
+//}
 /*
 This project refers to the JUCE official examples. (www.JUCE.com)
 

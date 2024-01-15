@@ -432,9 +432,10 @@ public:
                 }
             }
             else if (status == Tx_ack) {
+                unsigned tmp = 0b0111;
                 for (int i = 0; i < 500; ++i) {
                     // random content
-                    add_samples_from_a_bit(transmitting_buffer, i & 1);
+                    add_samples_from_a_bit(transmitting_buffer, (tmp >> (i % 4)) & 1);
                 }
             }        
         return true;
